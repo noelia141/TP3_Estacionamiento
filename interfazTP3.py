@@ -94,7 +94,7 @@ class VentanaPrincipal:
     Salida:
     Objeto VentanaPrincipal configurado.
     """
-    def __init__(self, raiz):
+    def __init__(self, inicial):
         """
         Inicializa la ventana principal y configura sus
         propiedades generales.
@@ -103,7 +103,7 @@ class VentanaPrincipal:
         Salida:
         Instancia inicializada de la clase.
         """
-        self.root = raiz #Guarda la ventana principal.
+        self.root = inicial #Guarda la ventana principal.
         self.root.title("Sistema de Parqueo - TEC 2026")
         self.root.geometry("520x600")
         self.root.resizable(False, False)
@@ -119,7 +119,7 @@ class VentanaPrincipal:
         Componentes gráficos agregados a la ventana.
         """
         frameCabecera = tk.Frame(self.root, bg="#e8d7a9", pady=25) #Crea un Frame para agrupar elementos de la cabecera.
-        frameCabecera.pack(fill="x")# pack() coloca el Frame en la ventana, fill="x" hace que ocupe todo el ancho disponible.
+        frameCabecera.pack(fill="x") #pack() coloca el Frame en la ventana, fill="x" hace que ocupe todo el ancho disponible.
         #Label crea un texto visible dentro de la interfaz.
         labelTitulo = tk.Label(frameCabecera, text="Sistema de Parqueo", font=("Segoe UI", 22, "bold"), bg="#e8d7a9", fg="#52223c")
         labelTitulo.pack() #Muestra el Label en la ventana.
@@ -151,6 +151,75 @@ class VentanaPrincipal:
             boton.pack(pady=6)
 
 if __name__ == "__main__":
-    raiz = tk.Tk()
-    app = VentanaPrincipal(raiz)
-    raiz.mainloop() 
+    inicio = tk.Tk()
+    app = VentanaPrincipal(inicio)
+    inicio.mainloop() 
+
+#Interfaz del submenu de Reportes.
+def generarCierreDiario():
+    """
+    Genera el reporte de cierre diario con la información de todos
+    los vehículos del día.
+    """
+    messagebox.showinfo("Cierre diario")
+
+def generarCierreTipo():
+    """
+    Genera el archivo XML con el cierre separado por tipo de pago
+    (efectivo, sinpe, tarjeta).
+    """
+    messagebox.showinfo("Cierre por tipo de pago")
+
+def exportarCierreCSV():
+    """
+    Exporta la tabla del cierre diario a un archivo CSV.
+    """
+    messagebox.showinfo("Exportar a CSV")
+
+class VentanaReportes:
+    """
+    Construye y muestra la ventana del submenú de Reportes.
+    Contiene los 3 botones de reportes y un botón para regresar.
+    Entrada:
+    root (tk.Tk o tk.Toplevel): la ventana desde la cual se abre esta ventana
+    """
+    def __init__(self, root):
+        self.ventana = tk.Toplevel(root) #Toplevel crea una ventana nueva sin cerrar la ventana principal.
+        self.ventana.title("Reportes - Sistema de Parqueo")
+        self.ventana.geometry("520x450")
+        self.ventana.resizable(False, False)
+        self.ventana.configure(bg="#16213E")
+        self.construirCabecera()
+        self.construirMenu()
+
+    def construirCabecera(self):
+        """
+        Crea la sección superior de la ventana con el título y subtítulo.
+        """
+        frameCabecera = tk.Frame(self.ventana, bg = "#e8d7a9", pady=25)
+        frameCabecera.pack(fill="x") #fill="x" hace que el frame ocupe todo el ancho de la ventana.
+        labelTitulo = tk.Label(frameCabecera, text="Reportes", font=("Segoe UI", 22, "bold"), bg="#e8d7a9", fg="#52223c")
+        labelTitulo.pack()
+        labelSubtitulo = tk.Label(frameCabecera, text="Generación de reportes del estacionamiento", font=("Segoe UI", 11), bg="#e8d7a9", fg="#52223c")
+        labelSubtitulo.pack(pady=(2, 0))
+    
+    def construirMenu(self):
+        """
+        Crea el área central con los 3 botones de reportes
+        y el botón para regresar al menú principal.
+        """
+        frameMenu = tk.Frame(self.ventana, bg="#e8d7a9", pady=30, padx=40)
+        frameMenu.pack(fill="both", expand=True) #expand=True permite que el frame ocupe el espacio vertical sobrante.
+        labelMenuTitulo = tk.Label(frameMenu, text="Tipo de Reporte", font=("Segoe UI", 9, "bold"), bg="#e8d7a9", fg="#52223c")
+        labelMenuTitulo.pack(pady=(0, 15))
+        #Lista de tuplas con el texto y la función de cada botón.
+        configuracionBotones = [
+            ("Cierre Diario", generarCierreDiario),
+            ("Cierre por Tipo de Pago", generarCierreTipo),
+            ("Exportar Cierre a CSV", exportarCierreCSV),
+        ]
+        for textBoton, funcionBoton in configuracionBotones: #Recorre la lista y crea cada botón con su función correspondiente.
+            boton = crearBotonMenu(frameMenu, textBoton, funcionBoton)
+            boton.pack(pady=6)
+        botonRegresar = crearBotonMenu(frameMenu, "Regresar", self.ventana.destroy) #self.ventana.destroy cierra esta ventana y regresa al menú principal
+        botonRegresar.pack(pady=(20, 6))
