@@ -1,3 +1,127 @@
+import json
+"""
+formato de los objetos json que representan un espacio del estacionamiento
+{
+    'numEspacio': int>0
+    'tipo': int [0, 1 , 2] donde 0=general, 1=reservado, 2=electrico
+    'id': int
+    'placa': str
+    'marca': int
+    'color': int
+    'formaPago': int [0, 1, 2, 3] donde 0=noReservado, 1=efectivo, 2=sinpe, 3=targeta
+    'monto': int
+    'horaEntrada': str
+}
+"""
+def validarNombreArchivo(pArchivo): #valida que el nombre tenga el dominio .json    @@@@@
+    import re
+    if re.match(r".*\.json$", pArchivo):
+        return True
+    else:
+        return False
+def obtenerEstacionamiento(pArchivo):   #obtiene un estacionamiento en caso de que ya exista    @@@@@ 
+    try:
+        archivo = open(pArchivo, "r")   #aqui se debio indicar que el archivo solo puede ser .json
+        contenido = json.load(archivo)  #extrae el contenido del objeto json
+        archivo.close()
+        return contenido
+    except:
+        print ("El archivo no fue encontrado, porfavor asegurece de que el dominio sea .json")
+        return False
+def obtenerFechaHora(): #obtiene la hora y fecha dd/mm/aaaa hh:mm:ss
+    from datetime import datetime
+    ahora = datetime.now()
+    return ahora.strftime("%d/%m/%Y %H:%M:%S")   #dd/mm/aaaa hh:mm:ss
+def crearEstacionamiento(pEspacios, pElectricos):   #crea el estacionamiento en base al numero de espacios asignados
+    import math
+    reservados=math.ceil((5*pEspacios)/100) #obtiene la cantidad de espacios reservado redondeando hacia arriba
+    if reservados<2 and pEspacios>2:    #valida si hay al menos 2 espacios reservados
+        reservados=2
+    estacionamiento={}
+    for numEspacio in range(1, pEspacios+1):    #cuenta desde el espacio 1 hasta el dado por el admin
+        if reservados!=0:   #valida si aun hay espacios reservados por asignar
+            estacionamiento[str(numEspacio)]={
+            'numEspacio': numEspacio,
+            'tipo': 1,  
+            'id': 0,
+            'placa': 0,
+            'marca': 0,
+            'color': 0,
+            'formaPago': 0,
+            'monto': 0,
+            'horaEntrada': "00/00/0000 00:00:00"
+            }
+            reservados-=1
+        elif reservados==0 and pElectricos!=0:    #plantilla para parqueo auto electrico
+            estacionamiento[str(numEspacio)]={
+            'numEspacio': numEspacio,
+            'tipo': 2,  
+            'id': 0,
+            'placa': 0,
+            'marca': 0,
+            'color': 0,
+            'formaPago': 0,
+            'monto': 0,
+            'horaEntrada': "00/00/0000 00:00:00"
+            }
+            pElectricos-=1
+        else:   #plantilla para parqueo general
+            estacionamiento[str(numEspacio)]={
+            'numEspacio': numEspacio,
+            'tipo': 0,  
+            'id': 0,
+            'placa': 0,
+            'marca': 0,
+            'color': 0,
+            'formaPago': 0,
+            'monto': 0,
+            'horaEntrada': "00/00/0000 00:00:00"
+            }
+    print("plantilla creada con exito!!!")
+    return estacionamiento
+def guardarEstacionamientoJSON(pEstacionamiento, pArchivo): #guarda el diccionario estacionamiento en formato json
+    try:
+        archivo = open(pArchivo, "w")   #aqui se debio indicar que el archivo solo puede ser .json
+        json.dump(pEstacionamiento, archivo, indent=4)  #guarda el diccionario como un objeto .json
+        archivo.close()
+        return "Archivo guardado con exito!!!"
+    except:
+        return "El archivo no fue encontrado, porfavor asegurece de que el dominio sea .json"
+
+#reserva masiva
+def conversionesNumericas(pTipo, pMarca, pColor, pFormaPago):    #encargada de convertir los int del usuario a valores str legibles    @@@@@
+    if pMarca in [0,1,2,3,4,5,6,7,8,9] and pColor in [0,1,2,3,4,5,6,7,8,9] and pFormaPago in [0,1,2,3]: #valida que los datos sean validos
+        tipoParqueo=["General","Reservado","Electrico"]
+        tipoMarca=["No asignado","Toyota","Subaru","Honda","BMW","BYD","Audi","Porsche","Ford","Otra"]
+        tipoColor=["No asignado","Rojo","Azul","Verde","Gris","Negro","Blanco","Amarillo","Bicolor","Otro"]
+        tipoFormaPago=["No reservado","Efectivo","Sinpe","Targeta"]
+        return [tipoParqueo[pTipo],tipoMarca[pMarca],tipoColor[pColor],tipoFormaPago[pFormaPago]]
+    else:
+        return "Datos invalidos porfavor seleccione un valor numerico valido"
+def verEspacio(pEstacionamiento, pEspacio): #muestra los datos solicitados del espacio marcado  @@@@@@
+        if pEspacio in pEstacionamiento:    #valida si la llave existe en el estacionamiento
+            posicion=pEstacionamiento[pEspacio] #obtiene la informacion del espacio de estacionamiento
+            return [posicion["numEspacio"],posicion["placa"],posicion["marca"],posicion["color"],posicion["horaEntrada"]] #devuelve una lista con los datos solicitados
+        else:
+            return "El espacio ingresado no existe por favor verifique que el indice exista."
+def estacionarVehiculo(pEstacionamiento, pEspacio, pTipo, pId, pPlaca, pMarca, pColor, pFormaPago): #actualiza los datos estacionando un auto  @@@@@
+    if not pEspacio in pEstacionamiento:    #valida si el esapcio de estacionamiento no existe en el estacionamiento
+        return False, "El espacio no existe por favor verifique el espacio de estacionamiento" #aqui devuelvo un str que se va a mostrar en la interfaz
+    else:   #actualiza los datos de ese espacio con los del auto a estacionar
+        if pTipo==pEstacionamiento[pEspacio]["tipo"] or (pTipo==1 and pEstacionamiento[pEspacio]["tipo"]==0) or (pTipo==2 and pEstacionamiento[pEspacio]["tipo"]==0):    #se definen todos los casos posibles
+            pEstacionamiento[pEspacio].update({
+                "id":pId,
+                "placa":pPlaca,
+                "marca":pMarca,
+                "color":pColor,
+                "formaPago":pFormaPago,
+                "horaEntrada":obtenerFechaHora()
+            })
+            return "Estacionado correctamente", pEstacionamiento
+        else:
+            return False, f"El espacio {pEspacio} esta reservado solo para {conversionesNumericas(pEstacionamiento[pEspacio]["tipo"],0,0,0)[0]}"
+#def montoACU(pEstacionamiento, pEspacio, pMonto):
+
 #Creación de la interfaz.
 import tkinter as tk
 from tkinter import messagebox
@@ -36,7 +160,6 @@ def abrirAcercaDe():
     Abre una ventana con la información del equipo de desarrollo.
     """
     messagebox.showinfo("Acerca de", "Sistema de Estacionamiento - TEC 2026")
-
 """
 Funciones para el efecto del botón.
 Hover es el efecto de cambio de color del boton al
