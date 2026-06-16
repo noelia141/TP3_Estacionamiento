@@ -346,3 +346,96 @@ class VentanaReportes:
             boton.pack(pady=6)
         botonRegresar = crearBotonMenu(frameMenu, "Regresar", self.ventana.destroy) #self.ventana.destroy cierra esta ventana y regresa al menú principal
         botonRegresar.pack(pady=(20, 6))
+
+#Interfaz del submenu de configuración
+def guardarConfiguracion(tamanio, tiempoGracia, montoPorHora, ventana):
+    """
+    Guarda los valores ingresados en la configuración del parqueo.
+    Entrada:
+    tamanio (tk.Entry): campo con el tamaño del estacionamiento
+    tiempoGracia (tk.Entry): campo con el tiempo de gracia en minutos
+    montoPorHora (tk.Entry): campo con el monto por hora en colones
+    ventana (tk.Toplevel): la ventana de configuración
+    """
+    messagebox.showinfo("Configuración")
+
+def crearCampoEntrada(padre, etiqueta):
+    """
+    Crea una fila con una etiqueta y una caja de texto (Entry).
+    Entrada:
+    padre (tk.Widget): el contenedor donde se coloca la fila
+    etiqueta (str): el texto descriptivo del campo
+    Salida:
+    entrada (tk.Entry): la caja de texto lista para usar
+    """
+    #Frame horizontal que agrupa la etiqueta y la entrada en una misma fila.
+    fila = tk.Frame(padre, bg="#e8d7a9")
+    fila.pack(fill="x", pady=8)
+    #Etiqueta del campo, anchor="w" la alinea a la izquierda.
+    label = tk.Label(fila, text=etiqueta, font=("Segoe UI", 11), bg="#e8d7a9", fg="#52223c", width=22, anchor="w")
+    label.pack(side="left") #side="left" coloca la etiqueta a la izquierda de la fila.
+    #Caja de texto donde el usuario escribe el valor del campo.
+    entrada = tk.Entry(fila, font=("Segoe UI", 11), bg="#f5edd6", fg="#52223c", relief="flat", width=15)
+    entrada.pack(side="left") #side="left" coloca la entrada a la derecha de la etiqueta.
+    return entrada
+
+class VentanaConfiguracion:
+    """
+    Construye y muestra la ventana de configuración del parqueo.
+    Permite ingresar o modificar el tamaño, tiempo de gracia y monto por hora.
+    Entrada:
+    root (tk.Tk o tk.Toplevel): la ventana desde la cual se abre esta ventana
+    """
+    def __init__(self, root):
+        self.ventana = tk.Toplevel(root) #Toplevel crea una ventana nueva sin cerrar la ventana principal
+        self.ventana.title("Configuración - Sistema de Parqueo")
+        self.ventana.geometry("520x420")
+        self.ventana.resizable(False, False)
+        self.ventana.configure(bg="#16213E")
+        self.construirCabecera()
+        self.construirFormulario()
+
+    def construirCabecera(self):
+        """
+        Crea la sección superior de la ventana con el título y subtítulo.
+        """
+        frameCabecera = tk.Frame(self.ventana, bg="#e8d7a9", pady=25) #fill="x" hace que el frame ocupe todo el ancho de la ventana.
+        frameCabecera.pack(fill="x") 
+        labelTitulo = tk.Label(frameCabecera, text="Configuración", font=("Segoe UI", 22, "bold"), bg="#e8d7a9", fg="#52223c")
+        labelTitulo.pack()
+        labelSubtitulo = tk.Label(frameCabecera, text="Parámetros del estacionamiento", font=("Segoe UI", 11), bg="#e8d7a9", fg="#52223c")
+        labelSubtitulo.pack(pady=(2, 0))
+
+    def construirFormulario(self):
+        """
+        Crea el área central con los 3 campos de configuración
+        y los botones de guardar y cancelar.
+        """
+        frameFormulario = tk.Frame(self.ventana, bg="#e8d7a9", pady=30, padx=40)
+        frameFormulario.pack(fill="both", expand=True) #expand=True permite que el frame ocupe el espacio vertical sobrante
+        labelTituloFormulario = tk.Label(frameFormulario, text="Ingrese los datos", font=("Segoe UI", 9, "bold"), bg="#e8d7a9", fg="#52223c")
+        labelTituloFormulario.pack(pady=(0, 15))
+        #Se crean los 3 campos y guardamos cada Entry en self para poder leerlos después desde accionGuardar.
+        self.entradaTamanio      = crearCampoEntrada(frameFormulario, "Tamaño del parqueo:")
+        self.entradaTiempoGracia = crearCampoEntrada(frameFormulario, "Tiempo de gracia (min):")
+        self.entradaMontoPorHora = crearCampoEntrada(frameFormulario, "Monto por hora (₡):")
+        frameBotones = tk.Frame(frameFormulario, bg="#e8d7a9") #Frame separado para los botones.
+        frameBotones.pack(pady=(25, 0))
+        botonGuardar = crearBotonMenu(frameBotones, "Guardar", self.accionGuardar) #self.accionGuardar es una referencia al método.
+        botonGuardar.pack(pady=6)
+        botonCancelar = crearBotonMenu(frameBotones, "Cancelar", self.ventana.destroy) #self.ventana.destroy cierra esta ventana y regresa al menú principal.
+        botonCancelar.pack(pady=6)
+
+    def accionGuardar(self):
+        """
+        Recolecta los valores de los 3 campos y llama a guardarConfiguracion.
+        Permite usar self.accionGuardar como referencia limpia sin lambda.
+        """
+        #Se pasan las 3 entradas y la ventana a la función guardarConfiguracion.
+        guardarConfiguracion(
+            self.entradaTamanio,
+            self.entradaTiempoGracia,
+            self.entradaMontoPorHora,
+            self.ventana
+        )
+
