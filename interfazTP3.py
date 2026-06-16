@@ -429,7 +429,6 @@ class VentanaConfiguracion:
     def accionGuardar(self):
         """
         Recolecta los valores de los 3 campos y llama a guardarConfiguracion.
-        Permite usar self.accionGuardar como referencia limpia sin lambda.
         """
         #Se pasan las 3 entradas y la ventana a la función guardarConfiguracion.
         guardarConfiguracion(
