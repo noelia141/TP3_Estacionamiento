@@ -1,25 +1,12 @@
 import json
-"""
-formato de los objetos json que representan un espacio del estacionamiento
-{
-    'numEspacio': int>0
-    'tipo': int [0, 1 , 2] donde 0=general, 1=reservado, 2=electrico
-    'id': int
-    'placa': str
-    'marca': int
-    'color': int
-    'formaPago': int [0, 1, 2, 3] donde 0=noReservado, 1=efectivo, 2=sinpe, 3=targeta
-    'monto': int
-    'horaEntrada': str
-}
-"""
+from datetime import datetime
 def validarNombreArchivo(pArchivo): #valida que el nombre tenga el dominio .json    @@@@@
     import re
     if re.match(r".*\.json$", pArchivo):
         return True
     else:
         return False
-def obtenerEstacionamiento(pArchivo):   #obtiene un estacionamiento en caso de que ya exista    @@@@@ 
+def obtenerEstacionamiento(pArchivo):   #obtiene un estacionamiento en caso de que ya exista (funcion dependiente de validarNombreArchivo)    @@@@@ 
     try:
         archivo = open(pArchivo, "r")   #aqui se debio indicar que el archivo solo puede ser .json
         contenido = json.load(archivo)  #extrae el contenido del objeto json
@@ -29,7 +16,6 @@ def obtenerEstacionamiento(pArchivo):   #obtiene un estacionamiento en caso de q
         print ("El archivo no fue encontrado, porfavor asegurece de que el dominio sea .json")
         return False
 def obtenerFechaHora(): #obtiene la hora y fecha dd/mm/aaaa hh:mm:ss
-    from datetime import datetime
     ahora = datetime.now()
     return ahora.strftime("%d/%m/%Y %H:%M:%S")   #dd/mm/aaaa hh:mm:ss
 def crearEstacionamiento(pEspacios, pElectricos):   #crea el estacionamiento en base al numero de espacios asignados
@@ -79,7 +65,7 @@ def crearEstacionamiento(pEspacios, pElectricos):   #crea el estacionamiento en 
             }
     print("plantilla creada con exito!!!")
     return estacionamiento
-def guardarEstacionamientoJSON(pEstacionamiento, pArchivo): #guarda el diccionario estacionamiento en formato json
+def guardarEstacionamientoJSON(pEstacionamiento, pArchivo): #guarda el diccionario estacionamiento en formato json  (funcion dependiente de crearEstacionamiento)
     try:
         archivo = open(pArchivo, "w")   #aqui se debio indicar que el archivo solo puede ser .json
         json.dump(pEstacionamiento, archivo, indent=4)  #guarda el diccionario como un objeto .json
@@ -87,7 +73,6 @@ def guardarEstacionamientoJSON(pEstacionamiento, pArchivo): #guarda el diccionar
         return "Archivo guardado con exito!!!"
     except:
         return "El archivo no fue encontrado, porfavor asegurece de que el dominio sea .json"
-
 #reserva masiva
 def conversionesNumericas(pTipo, pMarca, pColor, pFormaPago):    #encargada de convertir los int del usuario a valores str legibles    @@@@@
     if pMarca in [0,1,2,3,4,5,6,7,8,9] and pColor in [0,1,2,3,4,5,6,7,8,9] and pFormaPago in [0,1,2,3]: #valida que los datos sean validos
@@ -106,7 +91,7 @@ def verEspacio(pEstacionamiento, pEspacio): #muestra los datos solicitados del e
             return "El espacio ingresado no existe por favor verifique que el indice exista."
 def estacionarVehiculo(pEstacionamiento, pEspacio, pTipo, pId, pPlaca, pMarca, pColor, pFormaPago): #actualiza los datos estacionando un auto  @@@@@
     if not pEspacio in pEstacionamiento:    #valida si el esapcio de estacionamiento no existe en el estacionamiento
-        return False, "El espacio no existe por favor verifique el espacio de estacionamiento" #aqui devuelvo un str que se va a mostrar en la interfaz
+        return False, pEstacionamiento
     else:   #actualiza los datos de ese espacio con los del auto a estacionar
         if pTipo==pEstacionamiento[pEspacio]["tipo"] or (pTipo==1 and pEstacionamiento[pEspacio]["tipo"]==0) or (pTipo==2 and pEstacionamiento[pEspacio]["tipo"]==0):    #se definen todos los casos posibles
             pEstacionamiento[pEspacio].update({
@@ -119,9 +104,18 @@ def estacionarVehiculo(pEstacionamiento, pEspacio, pTipo, pId, pPlaca, pMarca, p
             })
             return "Estacionado correctamente", pEstacionamiento
         else:
-            return False, f"El espacio {pEspacio} esta reservado solo para {conversionesNumericas(pEstacionamiento[pEspacio]["tipo"],0,0,0)[0]}"
-#def montoACU(pEstacionamiento, pEspacio, pMonto):
-
+            return False, pEstacionamiento
+def calcularHoras(pEstacionamiento, pEspacio):  #calcula la cantidad de horas (funcion dependiente de conversionFechaParaPago)
+    horaEnt = datetime.strptime(pEstacionamiento[pEspacio]["horaEntrada"],"%d/%m/%Y %H:%M:%S")  #convierto mi str de hora entrada en un objeto de tiempo
+    horaAct = datetime.now()    #optiene la hora actual con el formato dd/mm/aaaa hh:mm:ss
+    diferencia = horaAct - horaEnt
+    horas = diferencia.total_seconds() / 3600
+    if horas>=1:
+        return horas
+    else:
+        return 0 
+def calcularMonto(pHoras, pCobro):  #calcula el monto en base a la cantidad de horas
+    return f"El monto a pagar es de ₡{pHoras*pCobro}"
 #Creación de la interfaz.
 import tkinter as tk
 from tkinter import messagebox
