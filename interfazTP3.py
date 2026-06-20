@@ -19,6 +19,7 @@ def validarNombreArchivo(pArchivo): #valida que el nombre tenga el dominio .json
         return True
     else:
         return False
+    
 def obtenerEstacionamiento(pArchivo):   #obtiene un estacionamiento en caso de que ya exista    @@@@@ 
     try:
         archivo = open(pArchivo, "r")   #aqui se debio indicar que el archivo solo puede ser .json
@@ -28,10 +29,12 @@ def obtenerEstacionamiento(pArchivo):   #obtiene un estacionamiento en caso de q
     except:
         print ("El archivo no fue encontrado, porfavor asegurece de que el dominio sea .json")
         return False
+    
 def obtenerFechaHora(): #obtiene la hora y fecha dd/mm/aaaa hh:mm:ss
     from datetime import datetime
     ahora = datetime.now()
     return ahora.strftime("%d/%m/%Y %H:%M:%S")   #dd/mm/aaaa hh:mm:ss
+
 def crearEstacionamiento(pEspacios, pElectricos):   #crea el estacionamiento en base al numero de espacios asignados
     import math
     reservados=math.ceil((5*pEspacios)/100) #obtiene la cantidad de espacios reservado redondeando hacia arriba
@@ -79,6 +82,7 @@ def crearEstacionamiento(pEspacios, pElectricos):   #crea el estacionamiento en 
             }
     print("plantilla creada con exito!!!")
     return estacionamiento
+
 def guardarEstacionamientoJSON(pEstacionamiento, pArchivo): #guarda el diccionario estacionamiento en formato json
     try:
         archivo = open(pArchivo, "w")   #aqui se debio indicar que el archivo solo puede ser .json
@@ -98,12 +102,14 @@ def conversionesNumericas(pTipo, pMarca, pColor, pFormaPago):    #encargada de c
         return [tipoParqueo[pTipo],tipoMarca[pMarca],tipoColor[pColor],tipoFormaPago[pFormaPago]]
     else:
         return "Datos invalidos porfavor seleccione un valor numerico valido"
+    
 def verEspacio(pEstacionamiento, pEspacio): #muestra los datos solicitados del espacio marcado  @@@@@@
         if pEspacio in pEstacionamiento:    #valida si la llave existe en el estacionamiento
             posicion=pEstacionamiento[pEspacio] #obtiene la informacion del espacio de estacionamiento
             return [posicion["numEspacio"],posicion["placa"],posicion["marca"],posicion["color"],posicion["horaEntrada"]] #devuelve una lista con los datos solicitados
         else:
             return "El espacio ingresado no existe por favor verifique que el indice exista."
+        
 def estacionarVehiculo(pEstacionamiento, pEspacio, pTipo, pId, pPlaca, pMarca, pColor, pFormaPago): #actualiza los datos estacionando un auto  @@@@@
     if not pEspacio in pEstacionamiento:    #valida si el esapcio de estacionamiento no existe en el estacionamiento
         return False, "El espacio no existe por favor verifique el espacio de estacionamiento" #aqui devuelvo un str que se va a mostrar en la interfaz
@@ -262,21 +268,150 @@ class VentanaPrincipal:
         labelMenuTitulo.pack(pady=(0, 15))
         #Lista de tuplas con el texto de cada botón y la función asociada.
         configuracionBotones = [
-            ("Obtener Vehículos", abrirObtenerVehiculos),
-            ("Ver Estacionamiento", abrirVerEstacionamiento),
-            ("Reportes", abrirReportes),
-            ("Configuración", abrirConfiguracion),
-            ("Acerca de", abrirAcercaDe),
+            ("Obtener Vehículos", self.abrirObtenerVehiculosVentana),
+            ("Ver Estacionamiento", self.abrirVerEstacionamientoVentana),
+            ("Reportes", self.abrirReportesVentana),
+            ("Configuración", self.abrirConfiguracionVentana),
+            ("Acerca de", self.abrirAcercaDeVentana),
         ]
         for textBoton, funcionBoton in configuracionBotones:
             #Recorre la lista obteniendo el texto y la función de cada botón.
             boton = crearBotonMenu(frameMenu, textBoton, funcionBoton)
             boton.pack(pady=6)
 
-if __name__ == "__main__":
-    inicio = tk.Tk()
-    app = VentanaPrincipal(inicio)
-    inicio.mainloop() 
+    def abrirVerEstacionamientoVentana(self):
+        """
+        Abre la ventana del mapa visual del estacionamiento.
+        """
+        VentanaVerEstacionamiento(self.root)
+
+    def abrirReportesVentana(self):
+        """
+        Abre la ventana del submenú de Reportes.
+        """
+        VentanaReportes(self.root)
+
+    def abrirConfiguracionVentana(self):
+        """
+        Abre la ventana de configuración del parqueo.
+        """
+        VentanaConfiguracion(self.root)
+
+    def abrirObtenerVehiculosVentana(self):
+        """
+        Abre la ventana para obtener los vehículos de la API.
+        """
+        messagebox.showinfo("Obtener vehículos", "Aquí se cargarán los vehículos desde la API.")
+
+    def abrirAcercaDeVentana(self):
+        """
+        Abre la ventana con la información del equipo de desarrollo.
+        """
+        messagebox.showinfo("Acerca de", "Sistema de Estacionamiento - TEC 2026")
+
+#Interrfaz del submenu de Ver estacionamiento.
+class EspacioParqueo:
+    """
+    Representa un espacio individual del parqueo. Guarda sus propios
+    datos para poder usarlos al hacer clic, sin necesitar lambda.
+    Entrada:
+    padre (tk.Widget): el contenedor donde se coloca el espacio
+    numeroEspacio (int): el número del espacio
+    estado (str): "libre" u "ocupado"
+    root (tk.Tk o tk.Toplevel): la ventana raíz, para poder abrir Observar Espacio
+    """
+    def __init__(self, principal, numeroEspacio, estado, root):
+        self.numeroEspacio = numeroEspacio
+        self.estado = estado
+        self.root = root
+        #Definimos el color según el estado del espacio
+        if estado == "libre":
+            colorFondo = "#3CB371"   #Verde - espacio libre
+        else:
+            colorFondo = "#C0392B"   #Rojo - espacio ocupado
+        #command=self.alHacerClic ya conoce sus propios datos guardados en self
+        self.boton = tk.Button(principal, text="#" + str(numeroEspacio), bg=colorFondo, fg="#EAEAEA", font=("Segoe UI", 10, "bold"), relief="flat", cursor="hand2", width=8, height=3, command=self.alHacerClic)
+
+    def alHacerClic(self):
+        """
+        Abre la ventana de Observar Espacio con la información
+        de este espacio en particular.
+        """
+        messagebox.showinfo("Observar espacio", "Espacio #" + str(self.numeroEspacio) + " - Estado: " + self.estado)
+
+class VentanaVerEstacionamiento:
+    """
+    Construye y muestra la ventana con el mapa visual del parqueo,
+    donde cada espacio se representa como un botón verde (libre)
+    o rojo (ocupado).
+    Entrada:
+    root (tk.Tk o tk.Toplevel): la ventana desde la cual se abre esta ventana
+    """
+    def __init__(self, root):
+        #Toplevel crea una ventana nueva sin cerrar la ventana principal
+        self.root = root
+        self.ventana = tk.Toplevel(root)
+        self.ventana.title("Ver Estacionamiento - Sistema de Parqueo")
+        self.ventana.geometry("560x680")  #Ancho x alto en píxeles
+        self.ventana.resizable(False, False)  #No se puede redimensionar
+        self.ventana.configure(bg="#16213E")
+        #Construcción de las secciones de la ventana
+        self.construirCabecera()
+        self.construirMapaParqueo()
+        self.construirPie()
+    def construirCabecera(self):
+        """
+        Crea la sección superior de la ventana con el título y subtítulo.
+        """
+        frameCabecera = tk.Frame(self.ventana, bg="#e8d7a9", pady=20)
+        frameCabecera.pack(fill="x") #fill="x" hace que el frame ocupe todo el ancho de la ventana
+        labelTitulo = tk.Label(frameCabecera, text="Ver Estacionamiento", font=("Segoe UI", 20), bg="#e8d7a9", fg="#52223c")
+        labelTitulo.pack()
+        labelSubtitulo = tk.Label(frameCabecera, text="Verde: libre | Rojo: ocupado", font=("Segoe UI", 10), bg="#e8d7a9", fg="#52223c")
+        labelSubtitulo.pack(pady=(2, 0))
+
+    def construirMapaParqueo(self):
+        """
+        Crea la cuadrícula con los espacios de parqueo, la casetilla
+        de cobro y el baño sanitario.
+        """
+        frameMapa = tk.Frame(self.ventana, bg="#e8d7a9", pady=20, padx=20)
+        frameMapa.pack(fill="both", expand=True)
+        frameCuadricula = tk.Frame(frameMapa, bg="#e8d7a9")
+        frameCuadricula.pack()
+        #Lista de prueba simulando 16 espacios: (numero, estado) es solo temporal
+        espaciosSimulados = [
+            (1, "libre"), (2, "ocupado"), (3, "libre"), (4, "libre"),
+            (5, "ocupado"), (6, "libre"), (7, "ocupado"), (8, "libre"),
+            (9, "libre"), (10, "libre"), (11, "ocupado"), (12, "libre"),
+            (13, "ocupado"), (14, "libre"), (15, "libre"), (16, "ocupado"),
+        ]
+        #Variables para ir armando la cuadrícula de 4 columnas
+        fila = 0
+        columna = 0
+        for numeroEspacio, estado in espaciosSimulados:
+            espacio = EspacioParqueo(frameCuadricula, numeroEspacio, estado, self.root)
+            #padx y pady dan separación entre cada espacio de la cuadrícula
+            espacio.boton.grid(row=fila, column=columna, padx=8, pady=8)
+            columna = columna + 1
+            if columna == 4: #Cada 4 espacios saltamos a la siguiente fila
+                columna = 0
+                fila = fila + 1
+        #Casetilla de cobro, representada como una etiqueta aparte
+        labelCasetilla = tk.Label(frameCuadricula, text="Casetilla de cobro", font=("Segoe UI", 10, "bold"), bg="#8eaa94", fg="#EAEAEA", width=20, height=2)
+        labelCasetilla.grid(row=fila + 1, column=0, columnspan=2, padx=8, pady=(20, 8))
+        #Baño sanitario, representado como otra etiqueta
+        labelBano = tk.Label(frameCuadricula, text="Baño", font=("Segoe UI", 10, "bold"), bg="#8eaa94", fg="#EAEAEA", width=20, height=2)
+        labelBano.grid(row=fila + 1, column=2, columnspan=2, padx=8, pady=(20, 8))
+    def construirPie(self):
+        """
+        Crea la barra inferior con el botón para regresar al menú principal.
+        """
+        framePie = tk.Frame(self.ventana, bg="#e8d7a9", pady=10)
+        framePie.pack(fill="x", side="bottom")
+        #self.ventana.destroy cierra esta ventana y regresa al menú principal
+        botonRegresar = crearBotonMenu(framePie, "Regresar", self.ventana.destroy)
+        botonRegresar.pack()
 
 #Interfaz del submenu de Reportes.
 def generarCierreDiario():
@@ -438,3 +573,7 @@ class VentanaConfiguracion:
             self.ventana
         )
 
+if __name__ == "__main__":
+    inicio = tk.Tk()
+    app = VentanaPrincipal(inicio)
+    inicio.mainloop() 
