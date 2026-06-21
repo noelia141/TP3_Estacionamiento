@@ -1,4 +1,5 @@
 import json
+import random
 from datetime import datetime
 def validarNombreArchivo(pArchivo): #valida que el nombre tenga el dominio .json    @@@@@
     import re
@@ -6,6 +7,7 @@ def validarNombreArchivo(pArchivo): #valida que el nombre tenga el dominio .json
         return True
     else:
         return False
+
 def obtenerEstacionamiento(pArchivo):   #obtiene un estacionamiento en caso de que ya exista    @@@@@ 
     try:
         archivo = open(pArchivo, "r")   #aqui se debio indicar que el archivo solo puede ser .json
@@ -67,6 +69,7 @@ def crearEstacionamiento(pEspacios, pElectricos):   #crea el estacionamiento en 
             }
     print("plantilla creada con exito!!!")
     return estacionamiento
+
 def guardarEstacionamientoJSON(pEstacionamiento, pArchivo): #guarda el diccionario estacionamiento en formato json
     try:
         archivo = open(pArchivo, "w")   #aqui se debio indicar que el archivo solo puede ser .json
@@ -76,16 +79,34 @@ def guardarEstacionamientoJSON(pEstacionamiento, pArchivo): #guarda el diccionar
     except:
         return "El archivo no fue encontrado, porfavor asegurece de que el dominio sea .json"
 #reserva masiva
-def conversionesNumericas(pTipo, pMarca, pColor, pFormaPago):    #encargada de convertir los int del usuario a valores str legibles    @@@@@
-    if pMarca in [0,1,2,3,4,5,6,7,8,9] and pColor in [0,1,2,3,4,5,6,7,8,9] and pFormaPago in [0,1,2,3]: #valida que los datos sean validos
-        tipoParqueo=["General","Reservado","Electrico"]
-        tipoMarca=["No asignado","Toyota","Subaru","Honda","BMW","BYD","Audi","Porsche","Ford","Otra"]
-        tipoColor=["No asignado","Rojo","Azul","Verde","Gris","Negro","Blanco","Amarillo","Bicolor","Otro"]
-        tipoFormaPago=["No reservado","Efectivo","Sinpe","Targeta"]
-        return [tipoParqueo[pTipo],tipoMarca[pMarca],tipoColor[pColor],tipoFormaPago[pFormaPago]]
-    else:
-        return "Datos invalidos porfavor seleccione un valor numerico valido"
+def limpiarCedula(pApi):    #limpia la cedula de la reserva masiva
+    cedulaLimpia=""
+    cedula=pApi["id"]
+    for caracter in cedula:
+        if caracter!="-":
+            cedulaLimpia+=caracter
+    return cedulaLimpia
+def validarCedula(pCedula):
     
+    if re.match("^[1-9]\d{8}$",pApi)
+def conversionesPagosReservaMasiva(pApi):   #encargada de convertir los int del usuario a valores str legibles    @@@@@
+    numPagos=pApi["tipoPago"]
+    if numPagos%2==0:
+        numPagos=random.randint(0, 9)
+        pago="efectivo"
+    else:
+        primo = True
+        if numPagos <= 1:
+            pago="Targeta"
+        else:
+            for i in range(2, numPagos):
+                if numPagos % i == 0:
+                    pago="Targeta"
+                    primo=False
+                    break
+            if primo:
+                pago="Sinpe"  
+
 def verEspacio(pEstacionamiento, pEspacio): #muestra los datos solicitados del espacio marcado  @@@@@@
         if pEspacio in pEstacionamiento:    #valida si la llave existe en el estacionamiento
             posicion=pEstacionamiento[pEspacio] #obtiene la informacion del espacio de estacionamiento
