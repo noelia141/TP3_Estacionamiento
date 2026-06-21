@@ -113,7 +113,7 @@ def calcularHoras(pEstacionamiento, pEspacio):  #calcula la cantidad de horas (f
     if horas>=1:
         return horas
     else:
-        return 0 
+        return 1 
 def calcularMonto(pHoras, pCobro):  #calcula el monto en base a la cantidad de horas
     return f"El monto a pagar es de ₡{pHoras*pCobro}"
 #Creación de la interfaz.
