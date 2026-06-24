@@ -78,7 +78,7 @@ def guardarEstacionamientoJSON(pEstacionamiento, pArchivo): #guarda el diccionar
         return "Archivo guardado con exito!!!"
     except:
         return "El archivo no fue encontrado, porfavor asegurece de que el dominio sea .json"
-#reserva masiva
+#reserva masiva ------------------------------
 def limpiarCedula(pApi):    #limpia la cedula de la reserva masiva
     cedulaLimpia=""
     cedula=pApi["id"]
@@ -110,7 +110,7 @@ def conversionesPagosReservaMasiva(pApi):   #encargada de convertir los int del 
                     break
             if primo:
                 pago="Sinpe"  
-
+#---------------------------------------------
 def verEspacio(pEstacionamiento, pEspacio): #muestra los datos solicitados del espacio marcado  @@@@@@
         if pEspacio in pEstacionamiento:    #valida si la llave existe en el estacionamiento
             posicion=pEstacionamiento[pEspacio] #obtiene la informacion del espacio de estacionamiento
@@ -134,15 +134,25 @@ def estacionarVehiculo(pEstacionamiento, pEspacio, pTipo, pId, pPlaca, pMarca, p
             return "Estacionado correctamente", pEstacionamiento
         else:
             return False, pEstacionamiento
-def calcularHoras(pEstacionamiento, pEspacio):  #calcula la cantidad de horas (funcion dependiente de conversionFechaParaPago)
+
+def calcularHoras(pEstacionamiento, pEspacio, pHoraGracia):  #calcula la cantidad de horas (funcion dependiente de conversionFechaParaPago)
     horaEnt = datetime.strptime(pEstacionamiento[pEspacio]["horaEntrada"],"%d/%m/%Y %H:%M:%S")  #convierto mi str de hora entrada en un objeto de tiempo
     horaAct = datetime.now()    #optiene la hora actual con el formato dd/mm/aaaa hh:mm:ss
     diferencia = horaAct - horaEnt
     horas = diferencia.total_seconds() / 3600
-    if horas>=1:
+    if horas>=pHoraGracia:
         return horas
     else:
-        return 1 
+        return 0
+
+def conversionesNumAux(pTipo, pColor, pMarca):
+    tiposDisponibles=["General","Reservado","Electrico"]
+    colorDisponibles=["Rojo","Verde","Amarillo","Negro","Gris","Marron","Blanco","Azul","Morado","Bicolor","Otro"]
+    marcasDisponibles=["Toyota", "Honda", "Ford", "Chevrolet", "Nissan", "Hyundai", "Kia", "Volkswagen", "BMW", "Mercedes-Benz", "Otra"]
+
+def  conversionesNum():
+
+
 def calcularMonto(pHoras, pCobro):  #calcula el monto en base a la cantidad de horas
     return f"El monto a pagar es de ₡{pHoras*pCobro}"
 #Creación de la interfaz.
