@@ -1,8 +1,8 @@
 import json
 import random
+import re
 from datetime import datetime
 def validarNombreArchivo(pArchivo): #valida que el nombre tenga el dominio .json    @@@@@
-    import re
     if re.match(r".*\.json$", pArchivo):
         return True
     else:
@@ -86,9 +86,13 @@ def limpiarCedula(pApi):    #limpia la cedula de la reserva masiva
         if caracter!="-":
             cedulaLimpia+=caracter
     return cedulaLimpia
-def validarCedula(pCedula):
-    
-    if re.match("^[1-9]\d{8}$",pApi)
+
+def validarCedula(pCedula): #valida que la cedula sea de Costa Rica
+    if re.match("^[1-9]\d{8}$",pCedula):
+        return True
+    else:
+        return False
+
 def conversionesPagosReservaMasiva(pApi):   #encargada de convertir los int del usuario a valores str legibles    @@@@@
     numPagos=pApi["tipoPago"]
     if numPagos%2==0:
