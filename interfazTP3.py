@@ -1,11 +1,13 @@
 import json
+import random
+import re
 from datetime import datetime
 def validarNombreArchivo(pArchivo): #valida que el nombre tenga el dominio .json    @@@@@
-    import re
     if re.match(r".*\.json$", pArchivo):
         return True
     else:
         return False
+
 def obtenerEstacionamiento(pArchivo):   #obtiene un estacionamiento en caso de que ya exista    @@@@@ 
     try:
         archivo = open(pArchivo, "r")   #aqui se debio indicar que el archivo solo puede ser .json
@@ -15,7 +17,7 @@ def obtenerEstacionamiento(pArchivo):   #obtiene un estacionamiento en caso de q
     except:
         print ("El archivo no fue encontrado, porfavor asegurece de que el dominio sea .json")
         return False
-    
+
 def obtenerFechaHora(): #obtiene la hora y fecha dd/mm/aaaa hh:mm:ss
     ahora = datetime.now()
     return ahora.strftime("%d/%m/%Y %H:%M:%S")   #dd/mm/aaaa hh:mm:ss
@@ -67,6 +69,7 @@ def crearEstacionamiento(pEspacios, pElectricos):   #crea el estacionamiento en 
             }
     print("plantilla creada con exito!!!")
     return estacionamiento
+
 def guardarEstacionamientoJSON(pEstacionamiento, pArchivo): #guarda el diccionario estacionamiento en formato json
     try:
         archivo = open(pArchivo, "w")   #aqui se debio indicar que el archivo solo puede ser .json
@@ -76,23 +79,56 @@ def guardarEstacionamientoJSON(pEstacionamiento, pArchivo): #guarda el diccionar
     except:
         return "El archivo no fue encontrado, porfavor asegurece de que el dominio sea .json"
 #reserva masiva
-def conversionesNumericas(pTipo, pMarca, pColor, pFormaPago):    #encargada de convertir los int del usuario a valores str legibles    @@@@@
-    if pMarca in [0,1,2,3,4,5,6,7,8,9] and pColor in [0,1,2,3,4,5,6,7,8,9] and pFormaPago in [0,1,2,3]: #valida que los datos sean validos
-        tipoParqueo=["General","Reservado","Electrico"]
-        tipoMarca=["No asignado","Toyota","Subaru","Honda","BMW","BYD","Audi","Porsche","Ford","Otra"]
-        tipoColor=["No asignado","Rojo","Azul","Verde","Gris","Negro","Blanco","Amarillo","Bicolor","Otro"]
-        tipoFormaPago=["No reservado","Efectivo","Sinpe","Targeta"]
-        return [tipoParqueo[pTipo],tipoMarca[pMarca],tipoColor[pColor],tipoFormaPago[pFormaPago]]
+#reserva masiva ------------------------------
+def limpiarCedula(pApi):    #limpia la cedula de la reserva masiva
+    cedulaLimpia=""
+    cedula=pApi["id"]
+    for caracter in cedula:
+        if caracter!="-":
+            cedulaLimpia+=caracter
+    return cedulaLimpia
+
+def validarCedula(pCedula): #valida que la cedula sea de Costa Rica
+    if re.match("^[1-9]\d{8}$",pCedula):
+        return True
     else:
-        return "Datos invalidos porfavor seleccione un valor numerico valido"
-    
+        return False
+
+def conversionesPagosReservaMasiva(pApi):
+    """
+    Convierte el tipo de pago de la API a una cadena legible.
+    Entrada:
+    pApi (dict): diccionario con los datos del vehículo de la API
+    Salida:
+    pago (str): tipo de pago como string ("efectivo", "Sinpe" o "Targeta")
+    """
+    numPagos = pApi["tipoPago"]
+    if numPagos % 2 == 0: #Si es par, es efectivo
+        numPagos = random.randint(0, 9)
+        pago = "efectivo"
+    else:
+        if numPagos <= 1: #Si es 0 o 1, es Targeta.
+            pago = "Targeta"
+        else:
+            primo = True
+            for i in range(2, numPagos): #Verifica si es primo.
+                if numPagos % i == 0:
+                    primo = False
+                    break
+            if primo: #Si es primo es Sinpe
+                pago = "Sinpe"
+            else: #Si no es primo, es Targeta.
+                pago = "Targeta"
+    return pago 
+
+#---------------------------------------------
 def verEspacio(pEstacionamiento, pEspacio): #muestra los datos solicitados del espacio marcado  @@@@@@
         if pEspacio in pEstacionamiento:    #valida si la llave existe en el estacionamiento
             posicion=pEstacionamiento[pEspacio] #obtiene la informacion del espacio de estacionamiento
             return [posicion["numEspacio"],posicion["placa"],posicion["marca"],posicion["color"],posicion["horaEntrada"]] #devuelve una lista con los datos solicitados
         else:
             return "El espacio ingresado no existe por favor verifique que el indice exista."
-        
+
 def estacionarVehiculo(pEstacionamiento, pEspacio, pTipo, pId, pPlaca, pMarca, pColor, pFormaPago): #actualiza los datos estacionando un auto  @@@@@
     if not pEspacio in pEstacionamiento:    #valida si el esapcio de estacionamiento no existe en el estacionamiento
         return False, pEstacionamiento
@@ -109,17 +145,27 @@ def estacionarVehiculo(pEstacionamiento, pEspacio, pTipo, pId, pPlaca, pMarca, p
             return "Estacionado correctamente", pEstacionamiento
         else:
             return False, pEstacionamiento
-def calcularHoras(pEstacionamiento, pEspacio):  #calcula la cantidad de horas (funcion dependiente de conversionFechaParaPago)
+
+def calcularHoras(pEstacionamiento, pEspacio, pHoraGracia):  #calcula la cantidad de horas (funcion dependiente de conversionFechaParaPago)
     horaEnt = datetime.strptime(pEstacionamiento[pEspacio]["horaEntrada"],"%d/%m/%Y %H:%M:%S")  #convierto mi str de hora entrada en un objeto de tiempo
     horaAct = datetime.now()    #optiene la hora actual con el formato dd/mm/aaaa hh:mm:ss
     diferencia = horaAct - horaEnt
     horas = diferencia.total_seconds() / 3600
     if horas>=1:
-        return horas
+        if horas>=pHoraGracia:
+            return horas
     else:
-        return 0 
+        return 1 
+
+def conversionesNumAux(pTipo, pColor, pMarca):
+    tiposDisponibles=["General","Reservado","Electrico"]
+    colorDisponibles=["Rojo","Verde","Amarillo","Negro","Gris","Marron","Blanco","Azul","Morado","Bicolor","Otro"]
+    marcasDisponibles=["Toyota", "Honda", "Ford", "Chevrolet", "Nissan", "Hyundai", "Kia", "Volkswagen", "BMW", "Mercedes-Benz", "Otra"]
+    return [tiposDisponibles[pTipo], colorDisponibles[pColor], marcasDisponibles[pMarca]]
+
 def calcularMonto(pHoras, pCobro):  #calcula el monto en base a la cantidad de horas
     return f"El monto a pagar es de ₡{pHoras*pCobro}"
+
 #Creación de la interfaz.
 import tkinter as tk
 from tkinter import messagebox
@@ -231,7 +277,7 @@ class VentanaPrincipal:
         self.root.configure(bg="#16213E")
         self.construirCabecera()
         self.construirMenu()
-    
+
     def construirCabecera(self):
         """
         Construye la sección superior de la interfaz,
@@ -351,7 +397,7 @@ class VentanaVerEstacionamiento:
         self.construirCabecera()
         self.construirMapaParqueo()
         self.construirPie()
-        
+
     def construirCabecera(self):
         """
         Crea la sección superior de la ventana con el título y subtítulo.
@@ -486,7 +532,7 @@ class VentanaReportes:
         labelTitulo.pack()
         labelSubtitulo = tk.Label(frameCabecera, text="Generación de reportes del estacionamiento", font=("Segoe UI", 11), bg="#e8d7a9", fg="#52223c")
         labelSubtitulo.pack(pady=(2, 0))
-    
+
     def construirMenu(self):
         """
         Crea el área central con los 3 botones de reportes
@@ -503,7 +549,6 @@ class VentanaReportes:
         #Guardamos la entrada en self para leerla desde accionExportarCSV
         self.entradaNombreCSV = tk.Entry(frameCampoCSV, font=("Segoe UI", 10), bg="#f5edd6", fg="#52223c", relief="flat", width=18)
         self.entradaNombreCSV.pack(side="left")
-
         #Lista de tuplas con el texto y la función de cada botón.
         configuracionBotones = [
             ("Cierre Diario", generarCierreDiario),
@@ -518,13 +563,8 @@ class VentanaReportes:
 
     def accionExportarCSV(self):
         """
-        Funcionalidad:
         Lee el nombre del archivo del campo de entrada y llama
         a exportarCierreCSV con los datos del estacionamiento.
-        Entrada:
-        - Ninguna
-        Salida:
-        - Ninguna
         """
         #get() lee el texto que escribió el usuario en la entrada
         nombreArchivo = self.entradaNombreCSV.get()
@@ -625,4 +665,4 @@ class VentanaConfiguracion:
 if __name__ == "__main__":
     inicio = tk.Tk()
     app = VentanaPrincipal(inicio)
-    inicio.mainloop() 
+    inicio.mainloop()
