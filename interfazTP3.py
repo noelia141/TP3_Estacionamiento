@@ -1,5 +1,4 @@
 import json
-import random
 from datetime import datetime
 def validarNombreArchivo(pArchivo): #valida que el nombre tenga el dominio .json    @@@@@
     import re
@@ -7,7 +6,6 @@ def validarNombreArchivo(pArchivo): #valida que el nombre tenga el dominio .json
         return True
     else:
         return False
-
 def obtenerEstacionamiento(pArchivo):   #obtiene un estacionamiento en caso de que ya exista    @@@@@ 
     try:
         archivo = open(pArchivo, "r")   #aqui se debio indicar que el archivo solo puede ser .json
@@ -69,7 +67,6 @@ def crearEstacionamiento(pEspacios, pElectricos):   #crea el estacionamiento en 
             }
     print("plantilla creada con exito!!!")
     return estacionamiento
-
 def guardarEstacionamientoJSON(pEstacionamiento, pArchivo): #guarda el diccionario estacionamiento en formato json
     try:
         archivo = open(pArchivo, "w")   #aqui se debio indicar que el archivo solo puede ser .json
@@ -79,34 +76,16 @@ def guardarEstacionamientoJSON(pEstacionamiento, pArchivo): #guarda el diccionar
     except:
         return "El archivo no fue encontrado, porfavor asegurece de que el dominio sea .json"
 #reserva masiva
-def limpiarCedula(pApi):    #limpia la cedula de la reserva masiva
-    cedulaLimpia=""
-    cedula=pApi["id"]
-    for caracter in cedula:
-        if caracter!="-":
-            cedulaLimpia+=caracter
-    return cedulaLimpia
-def validarCedula(pCedula):
-    
-    if re.match("^[1-9]\d{8}$",pApi)
-def conversionesPagosReservaMasiva(pApi):   #encargada de convertir los int del usuario a valores str legibles    @@@@@
-    numPagos=pApi["tipoPago"]
-    if numPagos%2==0:
-        numPagos=random.randint(0, 9)
-        pago="efectivo"
+def conversionesNumericas(pTipo, pMarca, pColor, pFormaPago):    #encargada de convertir los int del usuario a valores str legibles    @@@@@
+    if pMarca in [0,1,2,3,4,5,6,7,8,9] and pColor in [0,1,2,3,4,5,6,7,8,9] and pFormaPago in [0,1,2,3]: #valida que los datos sean validos
+        tipoParqueo=["General","Reservado","Electrico"]
+        tipoMarca=["No asignado","Toyota","Subaru","Honda","BMW","BYD","Audi","Porsche","Ford","Otra"]
+        tipoColor=["No asignado","Rojo","Azul","Verde","Gris","Negro","Blanco","Amarillo","Bicolor","Otro"]
+        tipoFormaPago=["No reservado","Efectivo","Sinpe","Targeta"]
+        return [tipoParqueo[pTipo],tipoMarca[pMarca],tipoColor[pColor],tipoFormaPago[pFormaPago]]
     else:
-        primo = True
-        if numPagos <= 1:
-            pago="Targeta"
-        else:
-            for i in range(2, numPagos):
-                if numPagos % i == 0:
-                    pago="Targeta"
-                    primo=False
-                    break
-            if primo:
-                pago="Sinpe"  
-
+        return "Datos invalidos porfavor seleccione un valor numerico valido"
+    
 def verEspacio(pEstacionamiento, pEspacio): #muestra los datos solicitados del espacio marcado  @@@@@@
         if pEspacio in pEstacionamiento:    #valida si la llave existe en el estacionamiento
             posicion=pEstacionamiento[pEspacio] #obtiene la informacion del espacio de estacionamiento
@@ -138,7 +117,7 @@ def calcularHoras(pEstacionamiento, pEspacio):  #calcula la cantidad de horas (f
     if horas>=1:
         return horas
     else:
-        return 1 
+        return 0 
 def calcularMonto(pHoras, pCobro):  #calcula el monto en base a la cantidad de horas
     return f"El monto a pagar es de ₡{pHoras*pCobro}"
 #Creación de la interfaz.
@@ -372,6 +351,7 @@ class VentanaVerEstacionamiento:
         self.construirCabecera()
         self.construirMapaParqueo()
         self.construirPie()
+        
     def construirCabecera(self):
         """
         Crea la sección superior de la ventana con el título y subtítulo.
@@ -441,11 +421,44 @@ def generarCierreTipo():
     """
     messagebox.showinfo("Cierre por tipo de pago")
 
-def exportarCierreCSV():
+def exportarCierreCSV(nombreArchivo, estacionamiento):
     """
-    Exporta la tabla del cierre diario a un archivo CSV.
+    Exporta los datos del cierre diario a un archivo CSV sin encabezados,
+    en la misma carpeta del código. Si el archivo no existe, pregunta
+    al usuario si desea crearlo automáticamente.
+    Entrada:
+    nombreArchivo (str): nombre del archivo CSV ingresado por el usuario
+    estacionamiento (dict): diccionario con los datos del estacionamiento
     """
-    messagebox.showinfo("Exportar a CSV")
+    if nombreArchivo == "":
+        messagebox.showerror("Advertencia", "Debe ingresar un nombre de archivo.")
+        return
+    if not nombreArchivo.endswith(".csv"):
+        nombreArchivo = nombreArchivo + ".csv"
+    try:
+        archivoExiste = open(nombreArchivo, "r")  #Intenta abrir el archivo en modo lectura
+        archivoExiste.close()  #Cierra el archivo si existe
+        debeEscribir = True  #El archivo existe, se puede escribir
+    except:
+        respuesta = messagebox.askyesno("Archivo no encontrado", "El archivo '" + nombreArchivo + "' no existe. ¿Desea crearlo automáticamente?")
+        if respuesta == False:
+            return  #El usuario no desea crear el archivo, se cancela la operación
+        debeEscribir = True  #El usuario desea crear el archivo, se puede escribir
+    if debeEscribir:
+        archivo = open (nombreArchivo, "w", encoding = "utf-8" ) #Abre el archivo en modo escritura (crea el archivo si no existe)
+        for llave in estacionamiento:
+            espacio = estacionamiento[llave]
+            if espacio["formaPago"] != 0:  #Solo se escriben los espacios que tienen un vehículo estacionado
+                linea = (str(espacio["numEspacio"]) + "," +
+                        str(espacio["placa"]) + "," +
+                        str(espacio["marca"]) + "," +
+                        str(espacio["horaEntrada"]) + "," +
+                        "" + "," +
+                        str(espacio["formaPago"]) + "," +
+                        str(espacio["monto"]) + "\n")
+                archivo.write(linea)  #Escribe la línea en el archivo
+        archivo.close()  #Cierra el archivo después de escribir
+        messagebox.showinfo("Éxito", "Archivo '" + nombreArchivo + "' exportado correctamente.")
 
 class VentanaReportes:
     """
@@ -483,17 +496,40 @@ class VentanaReportes:
         frameMenu.pack(fill="both", expand=True) #expand=True permite que el frame ocupe el espacio vertical sobrante.
         labelMenuTitulo = tk.Label(frameMenu, text="Tipo de Reporte", font=("Segoe UI", 9, "bold"), bg="#e8d7a9", fg="#52223c")
         labelMenuTitulo.pack(pady=(0, 15))
+        frameCampoCSV = tk.Frame(frameMenu, bg="#e8d7a9")
+        frameCampoCSV.pack(pady=(0, 10))
+        labelCSV = tk.Label(frameCampoCSV, text="Nombre del archivo CSV:", font=("Segoe UI", 10), bg="#e8d7a9", fg="#52223c")
+        labelCSV.pack(side="left", padx=(0, 8))
+        #Guardamos la entrada en self para leerla desde accionExportarCSV
+        self.entradaNombreCSV = tk.Entry(frameCampoCSV, font=("Segoe UI", 10), bg="#f5edd6", fg="#52223c", relief="flat", width=18)
+        self.entradaNombreCSV.pack(side="left")
+
         #Lista de tuplas con el texto y la función de cada botón.
         configuracionBotones = [
             ("Cierre Diario", generarCierreDiario),
             ("Cierre por Tipo de Pago", generarCierreTipo),
-            ("Exportar Cierre a CSV", exportarCierreCSV),
+            ("Exportar Cierre a CSV", self.accionExportarCSV),
         ]
         for textBoton, funcionBoton in configuracionBotones: #Recorre la lista y crea cada botón con su función correspondiente.
             boton = crearBotonMenu(frameMenu, textBoton, funcionBoton)
             boton.pack(pady=6)
         botonRegresar = crearBotonMenu(frameMenu, "Regresar", self.ventana.destroy) #self.ventana.destroy cierra esta ventana y regresa al menú principal
         botonRegresar.pack(pady=(20, 6))
+
+    def accionExportarCSV(self):
+        """
+        Funcionalidad:
+        Lee el nombre del archivo del campo de entrada y llama
+        a exportarCierreCSV con los datos del estacionamiento.
+        Entrada:
+        - Ninguna
+        Salida:
+        - Ninguna
+        """
+        #get() lee el texto que escribió el usuario en la entrada
+        nombreArchivo = self.entradaNombreCSV.get()
+        #Por ahora pasamos un diccionario vacío hasta conectar el estacionamiento real
+        exportarCierreCSV(nombreArchivo, {})
 
 #Interfaz del submenu de configuración
 def guardarConfiguracion(tamanio, tiempoGracia, montoPorHora, ventana):
