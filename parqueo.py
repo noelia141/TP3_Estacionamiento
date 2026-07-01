@@ -1,15 +1,19 @@
+
 import json
 import random
 import re
-from datetime import datetime
 import os
-import math    
+import math  
+from datetime import datetime
 import qrcode
 from fpdf import FPDF
 import tkinter as tk
-from tkinter import messagebox    
+from tkinter import messagebox   
+from tkinter import filedialog
+from tkinter import filedialog
 import urllib.request
-
+import xml.etree.ElementTree as ET
+from xml.dom import minidom
 
 class Estacionamiento:
     """
@@ -20,13 +24,13 @@ class Estacionamiento:
     - pId (str): cédula del propietario del vehículo
     - pMarca (str): marca del vehículo
     - pColor (str): color del vehículo
-    - pTipo (int): tipo de espacio (0=General, 1=Reservado, 2=Eléctrico)
+    - pTipo (int): tipo de espacio (General, Reservado, Eléctrico)
     - pTipoVehiculo (str): tipo del vehículo (SUV, Sedan, Pickup, etc.)
     - pUbicacion (str): número de espacio donde está
     - pFechaHoraEntrada (str): fecha y hora de entrada
     - pFechaHoraSalida (str): fecha y hora de salida
     - pMonto (int): monto cobrado en colones
-    - pTipoPago (int): 1=Efectivo, 2=SINPE, 3=Tarjeta
+    - pTipoPago (int): Efectivo, SINPE, Tarjeta
     Salida:
     - Objeto Estacionamiento con todos sus atributos.
     """
@@ -48,7 +52,6 @@ class Estacionamiento:
 
 estadoApp = {
     #Lista oficial de objetos Estacionamiento.
-    
     "listaEstacionamiento": [], #Todos los espacios del parqueo se almacenan aquí.
     "tamanio": 0, #Cantidad total de espacios del parqueo.
     "tiempoGracia": 0, #Tiempo de gracia en minutos.
@@ -58,7 +61,9 @@ estadoApp = {
     "archivoCierre": "cierre.json" #Nombre del archivo donde se guarda el historial de vehículos.
 }
 
-def validarNombreArchivo(pArchivo): #valida que el nombre tenga el dominio .json  
+def validarNombreArchivo(pArchivo): #valida que el nombre tenga el dominio .json
+    #Usamos 'r' (raw string) para que la barra invertida '\' se trate como un 
+    #carácter literal y no como una secuencia de escape de Python.
     if re.match(r".*\.json$", pArchivo):
         return True
     else:
@@ -72,12 +77,12 @@ def obtenerFechaHora(): #obtiene la hora y fecha dd/mm/aaaa hh:mm:ss
 def limpiarCedula(pApi):
     """
     Funcionalidad:
-        Convierte el SSN de la API al formato de cédula
-        costarricense: X-XXXX-XXXX.
+    Convierte el SSN de la API al formato de cédula
+    costarricense: X-XXXX-XXXX.
     Entrada:
-        pApi (dict): vehículo obtenido desde la API.
+    pApi (dict): vehículo obtenido desde la API.
     Salida:
-        cedula (str): cédula con formato costarricense.
+    cedula (str): cédula con formato costarricense.
     """
     #Obtiene el número de identificación de la API.
     cedula = pApi["id"]
@@ -102,19 +107,19 @@ def validarCedula(pCedula):
     Salida:
         True o False.
     """
-    if re.match(r"^[1-7]-\d{4}-\d{4}$", pCedula):
+    if re.match(r"^[1-7]-\d{4}-\d{4}$", pCedula): 
         return True
     return False
 
 def limpiarPlaca(pApi):
     """
     Funcionalidad:
-        Convierte la placa de la API al formato
-        costarricense ABC-123.
+    Convierte la placa de la API al formato
+    costarricense ABC-123.
     Entrada:
-        pApi (dict): vehículo obtenido desde la API.
+    pApi (dict): vehículo obtenido desde la API.
     Salida:
-        placa (str): placa con formato ABC-123.
+    placa (str): placa con formato ABC-123.
     """
     placaAPI = pApi["placa"]
     letras = ""
@@ -142,14 +147,14 @@ def limpiarPlaca(pApi):
 def crearListaEstacionamiento(pTamanio, pTieneElectrico):
     """
     Funcionalidad:
-        Crea la lista inicial de objetos Estacionamiento vacíos
-        según el tamaño indicado, respetando espacios reservados
-        y eléctricos según la ley costarricense.
+    Crea la lista inicial de objetos Estacionamiento vacíos
+    según el tamaño indicado, respetando espacios reservados
+    y eléctricos según la ley costarricense.
     Entrada:
-        - pTamanio (int): cantidad total de espacios
-        - pTieneElectrico (bool): si tiene espacio eléctrico
+    pTamanio (int): cantidad total de espacios
+    pTieneElectrico (bool): si tiene espacio eléctrico
     Salida:
-        - lista (list): lista de objetos Estacionamiento vacíos
+    lista (list): lista de objetos Estacionamiento vacíos
     """
     lista = []
     #Calcula espacios reservados: 5% del total, mínimo 2.
@@ -189,14 +194,14 @@ def crearListaEstacionamiento(pTamanio, pTieneElectrico):
 def guardarListaJSON(pLista, pArchivo):
     """
     Funcionalidad:
-        Convierte la lista de objetos Estacionamiento a una lista
-        de diccionarios y la guarda en un archivo JSON junto con
-        la configuración del estacionamiento.
+    Convierte la lista de objetos Estacionamiento a una lista
+    de diccionarios y la guarda en un archivo JSON junto con
+    la configuración del estacionamiento.
     Entrada:
-        - pLista (list): lista de objetos Estacionamiento
-        - pArchivo (str): nombre del archivo JSON
+    pLista (list): lista de objetos Estacionamiento
+    pArchivo (str): nombre del archivo JSON
     Salida:
-        - mensaje (str): resultado de la operación
+    mensaje (str): resultado de la operación
     """
     try:
         #Convertimos cada objeto a diccionario para poder guardarlo en JSON
@@ -215,7 +220,6 @@ def guardarListaJSON(pLista, pArchivo):
                 "tipoPago" : espacio.tipoPago
             }
             listaDiccionarios.append(diccionario)
-        
         datosAGuardar = {
             "config": {
                 "tamanio": estadoApp["tamanio"],
@@ -236,13 +240,13 @@ def guardarListaJSON(pLista, pArchivo):
 def cargarListaJSON(pArchivo):
     """
     Funcionalidad:
-        Lee el archivo JSON y reconstruye la lista de objetos
-        Estacionamiento, además de restaurar la configuración.
-        Si no existe el archivo, retorna lista vacía.
+    Lee el archivo JSON y reconstruye la lista de objetos
+    Estacionamiento, además de restaurar la configuración.
+    Si no existe el archivo, retorna lista vacía.
     Entrada:
-        - pArchivo (str): nombre del archivo JSON
+    pArchivo (str): nombre del archivo JSON
     Salida:
-        - lista (list): lista de objetos Estacionamiento reconstruidos
+    lista (list): lista de objetos Estacionamiento reconstruidos
     """
     lista = []
     #Si el archivo no existe, retornamos lista vacía
@@ -252,10 +256,9 @@ def cargarListaJSON(pArchivo):
         archivo = open(pArchivo, "r")
         datosCargados = json.load(archivo)
         archivo.close()
-        
         listaDiccionarios = []
         if isinstance(datosCargados, dict):
-            # Cargamos configuración
+            #Cargamos configuración
             config = datosCargados.get("config", {})
             estadoApp["tamanio"] = config.get("tamanio", 0)
             estadoApp["tiempoGracia"] = config.get("tiempoGracia", 0)
@@ -264,7 +267,6 @@ def cargarListaJSON(pArchivo):
             listaDiccionarios = datosCargados.get("listaEstacionamiento", [])
         elif isinstance(datosCargados, list):
             listaDiccionarios = datosCargados
-            
         #Reconstruimos cada objeto desde su diccionario
         for dic in listaDiccionarios:
             espacio = Estacionamiento(
@@ -280,19 +282,19 @@ def cargarListaJSON(pArchivo):
                 pTipoPago = dic["tipoPago"]
             )
             lista.append(espacio)
-    except Exception as e:
+    except Exception as e: #"e" es una variable que contiene información sobre el error ocurrido.
         return []
     return lista
 
 def buscarEspacio(pLista, pUbicacion):
     """
     Funcionalidad:
-        Busca un objeto Estacionamiento en la lista por su ubicación.
+    Busca un objeto Estacionamiento en la lista por su ubicación.
     Entrada:
-        - pLista (list): lista de objetos Estacionamiento
-        - pUbicacion (str): ubicación del espacio a buscar
+    pLista (list): lista de objetos Estacionamiento
+    pUbicacion (str): ubicación del espacio a buscar
     Salida:
-        - espacio (Estacionamiento) si se encontró, None si no.
+    espacio (Estacionamiento) si se encontró, None si no.
     """
     for espacio in pLista:
         if espacio.ubicacion == str(pUbicacion):
@@ -302,22 +304,25 @@ def buscarEspacio(pLista, pUbicacion):
 def espacioEstaOcupado(pEspacio):
     """
     Funcionalidad:
-        Determina si un espacio está ocupado revisando si tiene placa.
+    Determina si un espacio está ocupado revisando si tiene placa.
     Entrada:
-        - pEspacio (Estacionamiento): objeto a revisar
+    pEspacio (Estacionamiento): objeto a revisar
     Salida:
-        - (bool): True si está ocupado, False si está libre
+    (bool): True si está ocupado, False si está libre
     """
     if pEspacio.placa == "":
         return False
     return True
 
-#--------------------------------------------
-
 def calcularHoras(pEspacio, pHoraGracia):
     """
     Calcula la cantidad de horas que un vehículo ha permanecido
     en el estacionamiento.
+    Entrada:
+    pEspacio (obj): Objeto que contiene el atributo 'fechaHoraEntrada'.
+    pHoraGracia (int): Tiempo de gracia en minutos permitido.
+    Salida:
+    int: Cantidad de horas calculadas (redondeadas hacia arriba).
     """
     horaEntrada = datetime.strptime(pEspacio.fechaHoraEntrada, "%d/%m/%Y %H:%M:%S")
     horaActual = datetime.now()
@@ -335,6 +340,10 @@ def calcularMonto(pHoras, pCobro):  #calcula el monto en base a la cantidad de h
 def cargarHistorialJSON():
     """
     Carga el historial de vehículos desde el archivo JSON de cierre.
+    Entrada:
+    Ruta del archivo JSON de cierre.
+    Salida:
+    Lista de diccionarios con los registros de vehículos.
     """
     if not os.path.exists(estadoApp["archivoCierre"]):
         return []
@@ -349,21 +358,26 @@ def cargarHistorialJSON():
 def guardarHistorialJSON(pLista):
     """
     Guarda el historial de vehículos en el archivo JSON de cierre.
+    Entrada:
+    Lista de diccionarios con los registros de vehículos.
     """
     try:
         archivo = open(estadoApp["archivoCierre"], "w")
-        json.dump(pLista, archivo, indent=4)
+        #.dump() convierte el objeto de python a formato JSON y la escribe en el archivo.
+        json.dump(pLista, archivo, indent=4) #intent=4 para que el JSON sea legible con sangría de 4 espacios.
         archivo.close()
     except Exception as e:
-        print("Error al guardar historial:", e)
+        print("Error al guardar historial:", e) #"e" es una variable que contiene información sobre el error ocurrido.
 
 def registrarVehiculoEnHistorial(pVehiculo):
     """
     Registra un vehículo en la base de datos de historial (cierre.json).
     Evita registros duplicados basados en placa y fecha de entrada.
+    Entrada:   
+    pVehiculo (dict): diccionario con los datos del vehículo a registrar.
     """
     historial = cargarHistorialJSON()
-    # Evitamos duplicados
+    #Evitamos duplicados
     for registro in historial:
         if registro["placa"] == pVehiculo["placa"] and registro["fechaHoraEntrada"] == pVehiculo["fechaHoraEntrada"]:
             return
@@ -374,6 +388,12 @@ def actualizarSalidaEnHistorial(pPlaca, pFechaHoraEntrada, pFechaHoraSalida, pMo
     """
     Busca un registro por placa y fechaHoraEntrada y actualiza los campos
     de salida (fechaHoraSalida, monto, tipoPago).
+    Entrada:
+    pPlaca (str): placa del vehículo.
+    pFechaHoraEntrada (str): fecha y hora de entrada del vehículo.
+    pFechaHoraSalida (str): fecha y hora de salida del vehículo.
+    pMonto (int): monto cobrado por la estadía.
+    pTipoPago (str): tipo de pago realizado.
     """
     historial = cargarHistorialJSON()
     encontrado = False
@@ -390,39 +410,34 @@ def actualizarSalidaEnHistorial(pPlaca, pFechaHoraEntrada, pFechaHoraSalida, pMo
 def obtenerVehiculos(pCantidad):
     """
     Funcionalidad:
-        Obtiene vehículos desde la API de Mockaroo, realiza la
-        validación y los asigna a espacios libres hasta completar
-        la cantidad requerida. Respeta un mínimo de 5% de espacios
-        libres totales obligatorios.
-        Luego guarda la BD en JSON y genera los vouchers.
+    Obtiene vehículos desde la API de Mockaroo, realiza la
+    validación y los asigna a espacios libres hasta completar
+    la cantidad requerida. Respeta un mínimo de 5% de espacios
+    libres totales obligatorios.
+    Luego guarda la BD en JSON y genera los vouchers.
     Entrada:
-        - pCantidad (int): cantidad de vehículos a obtener.
+    pCantidad (int): cantidad de vehículos a obtener.
     Salida:
-        - resultado (str): mensaje de éxito o error.
+    resultado (str): mensaje de éxito o error.
     """
     tamanio = len(estadoApp["listaEstacionamiento"])
     if tamanio == 0:
         return "Debe configurar el estacionamiento antes de obtener vehículos."
-
-    # Regla del 5% de espacios libres obligatorios
-    keep_free = math.ceil((5 * tamanio) / 100)
-    max_occupied = tamanio - keep_free
-    current_occupied = sum(1 for espacio in estadoApp["listaEstacionamiento"] if espacioEstaOcupado(espacio))
-    
-    limite_asignacion = max(0, max_occupied - current_occupied)
-    target_quantity = min(pCantidad, limite_asignacion)
-
-    if target_quantity == 0:
-        return f"No se pueden asignar más vehículos. Para cumplir con el 5% de espacios libres obligatorios, el límite es {max_occupied} espacios ocupados de {tamanio} totales (actualmente ocupados: {current_occupied})."
-
+    #Regla del 5% de espacios libres obligatorios
+    espaciosMantenerLibres = math.ceil((5 * tamanio) / 100)
+    maximoOcupados = tamanio - espaciosMantenerLibres
+    actualmenteOcupado = sum(1 for espacio in estadoApp["listaEstacionamiento"] if espacioEstaOcupado(espacio))
+    limiteAsignacion = max(0, maximoOcupados - actualmenteOcupado)
+    cantidadObjetivo = min(pCantidad, limiteAsignacion)
+    if cantidadObjetivo == 0:
+        return f"No se pueden asignar más vehículos. Para cumplir con el 5% de espacios libres obligatorios, el límite es {maximoOcupados} espacios ocupados de {tamanio} totales (actualmente ocupados: {actualmenteOcupado})."
     vehiculosAsignados = 0
     diccionarioAsignados = {}
-
-    # Realizamos llamadas a la API en bucle hasta tener la cantidad deseada de vehículos asignados
+    #Realizamos llamadas a la API en bucle hasta tener la cantidad deseada de vehículos asignados
     intentos = 0
-    while vehiculosAsignados < target_quantity and intentos < 10:
+    while vehiculosAsignados < cantidadObjetivo and intentos < 10:
         intentos += 1
-        restante = target_quantity - vehiculosAsignados
+        restante = cantidadObjetivo - vehiculosAsignados
         url = "https://my.api.mockaroo.com/autosDatos.json?key=c15a55d0&count=" + str(restante)
         try:
             respuesta = urllib.request.urlopen(url)
@@ -430,41 +445,32 @@ def obtenerVehiculos(pCantidad):
         except Exception as e:
             print("Error de conexión con la API en intento", intentos, ":", e)
             break
-
         if isinstance(datosApi, dict):
             datosApi = [datosApi]
-
-        asignados_en_esta_ronda = 0
+        asignadosEstaRonda = 0
         for vehiculo in datosApi:
-            if vehiculosAsignados >= target_quantity:
+            if vehiculosAsignados >= cantidadObjetivo:
                 break
-
             cedulaLimpia = limpiarCedula(vehiculo)
             if not validarCedula(cedulaLimpia):
                 continue
-
             placaLimpia = limpiarPlaca(vehiculo)
-            
-            # Evitar duplicar placas en la misma asignación
+            #Evitar duplicar placas en la misma asignación
             if placaLimpia in diccionarioAsignados:
                 continue
-            
-            # Evitar duplicar placas de vehículos que ya están estacionados
-            placa_ya_existe = any(espacio.placa == placaLimpia for espacio in estadoApp["listaEstacionamiento"])
-            if placa_ya_existe:
+            #Evitar duplicar placas de vehículos que ya están estacionados
+            placaExiste = any(espacio.placa == placaLimpia for espacio in estadoApp["listaEstacionamiento"])
+            if placaExiste:
                 continue
-
-            # Buscar espacio libre del tipo requerido
+            #Buscar espacio libre del tipo requerido
             espacioLibre = None
             for espacio in estadoApp["listaEstacionamiento"]:
                 if espacio.tipo == vehiculo["tipoEstacionamiento"] and not espacioEstaOcupado(espacio):
                     espacioLibre = espacio
                     break
-
             if espacioLibre is None:
                 continue
-
-            # Registrar datos en el espacio del parqueo
+            #Registrar datos en el espacio del parqueo
             ahora = datetime.now()
             horaAleatoria = random.randint(7, ahora.hour)
             minutoAleatorio = random.randint(0, 59)
@@ -474,7 +480,6 @@ def obtenerVehiculos(pCantidad):
                 minute=minutoAleatorio,
                 second=segundoAleatorio
             ).strftime("%d/%m/%Y %H:%M:%S")
-
             espacioLibre.id = cedulaLimpia
             espacioLibre.placa = placaLimpia
             espacioLibre.marca = vehiculo["marca"]
@@ -483,8 +488,7 @@ def obtenerVehiculos(pCantidad):
             espacioLibre.fechaHoraSalida = ""
             espacioLibre.monto = 0
             espacioLibre.tipoPago = vehiculo["tipoPago"]
-
-            # Datos para diccionario de vouchers y retorno
+            #Datos para diccionario de vouchers y retorno
             datos = {
                 "id": cedulaLimpia,
                 "placa": placaLimpia,
@@ -499,9 +503,8 @@ def obtenerVehiculos(pCantidad):
             }
             diccionarioAsignados[placaLimpia] = datos
             vehiculosAsignados += 1
-            asignados_en_esta_ronda += 1
-
-            # Registrar en el historial (cierre.json)
+            asignadosEstaRonda += 1
+            #Registrar en el historial (cierre.json)
             registroHistorial = {
                 "id": cedulaLimpia,
                 "placa": placaLimpia,
@@ -515,25 +518,20 @@ def obtenerVehiculos(pCantidad):
                 "tipoPago": vehiculo["tipoPago"]
             }
             registrarVehiculoEnHistorial(registroHistorial)
-
-        # Si en una ronda no pudimos asignar a ningún vehículo y había datos, salimos para evitar bucle infinito
-        if asignados_en_esta_ronda == 0 and len(datosApi) > 0:
+        #Si en una ronda no pudimos asignar a ningún vehículo y había datos, salimos para evitar bucle infinito
+        if asignadosEstaRonda == 0 and len(datosApi) > 0:
             break
-
-    print("=== Diccionario de vehículos obtenidos y asignados ===")
+    print("Diccionario de vehículos obtenidos y asignados") #Para verificar que se asignaron correctamente los vehículos.
     for llave in diccionarioAsignados:
-        print(diccionarioAsignados[llave])
-
+        print(diccionarioAsignados[llave]) #Para verificar que se asignaron correctamente los vehículos.
     guardarListaJSON(
         estadoApp["listaEstacionamiento"],
         estadoApp["archivoJSON"]
     )
     generarVouchers(diccionarioAsignados)
-
-    if target_quantity < pCantidad:
-        return f"Se asignaron {vehiculosAsignados} vehículos. Se limitó para mantener el 5% de espacios libres obligatorios ({keep_free} espacios)."
+    if cantidadObjetivo < pCantidad:
+        return f"Se asignaron {vehiculosAsignados} vehículos. Se limitó para mantener el 5% de espacios libres obligatorios ({espaciosMantenerLibres} espacios)."
     return f"Se asignaron {vehiculosAsignados} vehículos correctamente."
-
 def generarVouchers(pDiccionarioVehiculos):
     """
     Genera un voucher en PDF con código QR por cada vehículo
@@ -541,7 +539,7 @@ def generarVouchers(pDiccionarioVehiculos):
     Entrada:
     pDiccionarioVehiculos (dict): diccionario con los datos de los vehículos
     """
-    os.makedirs("Vouchers", exist_ok=True)
+    os.makedirs("Vouchers", exist_ok=True) #exist_ok=True es de la librería os y permite crear la carpeta si no existe, sin lanzar error si ya existe.
     for llave in pDiccionarioVehiculos:
         vehiculo = pDiccionarioVehiculos[llave]
         textoQR = (vehiculo["placa"] + "-" + vehiculo["marca"] + "-" + vehiculo["tipo"] + "-" + vehiculo["fechaHoraEntrada"])
@@ -580,12 +578,12 @@ def generarVouchers(pDiccionarioVehiculos):
 def generarFacturaPDF(pEspacio):
     """
     Funcionalidad:
-        Genera una factura en PDF con la información completa
-        de la estadía y un código QR con los datos del vehículo.
+    Genera una factura en PDF con la información completa
+    de la estadía y un código QR con los datos del vehículo.
     Entrada:
-        pEspacio (Estacionamiento): objeto con todos los datos del pago.
+    pEspacio (Estacionamiento): objeto con todos los datos del pago.
     Salida:
-        Ninguna. Crea el archivo PDF en la carpeta del programa.
+    Crea el archivo PDF en la carpeta del programa.
     """
     os.makedirs("Facturas", exist_ok=True)
     # Creamos el QR con la información del vehículo
@@ -652,10 +650,8 @@ def generarFacturaPDF(pEspacio):
     os.remove(nombreQR)
     print("Factura generada: " + nombrePDF)
 
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 #Creación de la interfaz.
-
 """
 Funciones para el efecto del botón.
 Hover es el efecto de cambio de color del boton al
@@ -797,7 +793,7 @@ class VentanaPrincipal:
         """
         Abre la ventana con la información del equipo de desarrollo.
         """
-        messagebox.showinfo("Acerca de", "Sistema de Estacionamiento - TEC 2026")
+        messagebox.showinfo("Acerca de", "Sistema de Estacionamiento - TEC 2026\n\nCreado por:\n-Noelia Calderon\n-Axel Bustos")
 
 class VentanaObtenerVehiculos:
     """
@@ -920,7 +916,7 @@ class VentanaObservarEspacio:
         self.espacio = pEspacio
         self.ventana = tk.Toplevel(root)
         self.ventana.title("Espacio #" + str(pEspacio.ubicacion) + " - Sistema de Parqueo")
-        self.ventana.geometry("520x500")
+        self.ventana.geometry("520x540")
         self.ventana.resizable(False, False)
         self.ventana.configure(bg="#16213E")
         self.construirCabecera()
@@ -978,7 +974,8 @@ class VentanaObservarEspacio:
         frameFormulario = tk.Frame(self.ventana, bg="#e8d7a9", pady=20, padx=40)
         frameFormulario.pack(fill="both", expand=True)
         #Campo de solo lectura para el número de espacio
-        self.mostrarCampoSoloLectura(frameFormulario, "# Espacio:", self.espacio.id)
+        self.mostrarCampoSoloLectura(frameFormulario, "# Espacio:", self.espacio.ubicacion)
+        self.entradaId = crearCampoEntrada(frameFormulario, "Cédula dueño:")
         #Placa: entrada libre
         self.entradaPlaca = crearCampoEntrada(frameFormulario, "Placa:")
         #Marca: lista de opciones
@@ -1008,32 +1005,32 @@ class VentanaObservarEspacio:
         botonRegresar = crearBotonMenu(frameBotones, "Regresar", self.ventana.destroy)
         botonRegresar.pack(pady=6)
 
-    def mostrarCampoSoloLectura(self, padre, etiqueta, valor):
+    def mostrarCampoSoloLectura(self, principal, etiqueta, valor):
         """
         Crea una fila con etiqueta y valor en solo lectura.
         Entrada:
-            padre (tk.Frame): contenedor donde se coloca la fila.
-            etiqueta (str): texto descriptivo del campo.
-            valor (str): valor a mostrar.
+        principal (tk.Frame): contenedor donde se coloca la fila.
+        etiqueta (str): texto descriptivo del campo.
+        valor (str): valor a mostrar.
         """
-        fila = tk.Frame(padre, bg="#e8d7a9")
+        fila = tk.Frame(principal, bg="#e8d7a9")
         fila.pack(fill="x", pady=4)
         labelEtiqueta = tk.Label(fila, text=etiqueta, font=("Segoe UI", 11), bg="#e8d7a9", fg="#52223c", width=16, anchor="w")
         labelEtiqueta.pack(side="left")
         labelValor = tk.Label(fila, text=str(valor), font=("Segoe UI", 11, "bold"), bg="#e8d7a9", fg="#52223c", anchor="w")
         labelValor.pack(side="left")
 
-    def mostrarCampoSeleccion(self, padre, etiqueta, variable, opciones):
+    def mostrarCampoSeleccion(self, principal, etiqueta, variable, opciones):
         """
         Funcionalidad:
-            Crea una fila con etiqueta y OptionMenu (lista desplegable).
+        Crea una fila con etiqueta y OptionMenu (lista desplegable).
         Entrada:
-            padre (tk.Frame): contenedor donde se coloca la fila.
-            etiqueta (str): texto descriptivo del campo.
-            variable (tk.StringVar): variable vinculada al OptionMenu.
-            opciones (list): lista de strings con las opciones.
+        principal (tk.Frame): contenedor donde se coloca la fila.
+        etiqueta (str): texto descriptivo del campo.
+        variable (tk.StringVar): variable vinculada al OptionMenu.
+        opciones (list): lista de strings con las opciones.
         """
-        fila = tk.Frame(padre, bg="#e8d7a9")
+        fila = tk.Frame(principal, bg="#e8d7a9")
         fila.pack(fill="x", pady=4)
         labelEtiqueta = tk.Label(fila, text=etiqueta,font=("Segoe UI", 11), bg="#e8d7a9", fg="#52223c",width=16, anchor="w")
         labelEtiqueta.pack(side="left")
@@ -1044,21 +1041,37 @@ class VentanaObservarEspacio:
     def accionEstacionar(self):
         """
         Funcionalidad:
-            Valida los datos ingresados, registra el vehículo en el
-            objeto Estacionamiento, guarda la BD y cierra la ventana.
+        Valida los datos ingresados, registra el vehículo en el
+        objeto Estacionamiento, guarda la BD y cierra la ventana.
         """
+        cedula = self.entradaId.get().strip()
         placa = self.entradaPlaca.get().strip()
         marca = self.varMarca.get()
         color = self.varColor.get()
-        # Validamos que la placa no esté vacía
+        #Validamos que la cédula no esté vacía y tenga formato costarricense
+        if cedula == "":
+            messagebox.showwarning("Advertencia", "Debe ingresar la cédula del dueño.")
+            return
+        if not validarCedula(cedula):
+            messagebox.showwarning("Advertencia", "La cédula debe tener el formato costarricense (X-XXXX-XXXX), con el primer dígito del 1 al 7.")
+            return
+        #Validamos que la placa no esté vacía
         if placa == "":
             messagebox.showwarning("Advertencia", "Debe ingresar la placa del vehículo.")
             return
-        # Confirmamos la acción porque implica un pago futuro
-        confirmacion = messagebox.askyesno("Confirmar estacionamiento", "¿Desea estacionar el vehículo con placa " + placa + " en el espacio #" + str(self.espacio.id) + "?")
+        
+        #Validamos que la placa tenga el formato correcto (3 letras, guion, 3 números)
+        placa=placa.upper()
+        if not re.match(r"^[A-Z]{3}-\d{3}$",placa):
+            messagebox.showwarning("Advertencia", "El formato de la placa debe de ser 3 letras seguidas de guion seguido de 3 numeros ")
+            return
+
+        #Confirmamos la acción porque implica un pago futuro
+        confirmacion = messagebox.askyesno("Confirmar estacionamiento", "¿Desea estacionar el vehículo con placa " + placa + " en el espacio #" + str(self.espacio.ubicacion) + "?")
         if not confirmacion:
             return
-        # Actualizamos el objeto con los datos del vehículo
+        #Actualizamos el objeto con los datos del vehículo
+        self.espacio.id = cedula
         self.espacio.placa = placa
         self.espacio.marca = marca
         self.espacio.color = color
@@ -1066,7 +1079,7 @@ class VentanaObservarEspacio:
         self.espacio.fechaHoraSalida = ""
         self.espacio.monto = 0
         self.espacio.tipoPago = ""
-        # Generamos el voucher para este vehículo
+        #Generamos el voucher para este vehículo
         diccionarioUnico = {
             placa: {
                 "placa" : placa,
@@ -1080,10 +1093,9 @@ class VentanaObservarEspacio:
             }
         }
         generarVouchers(diccionarioUnico)
-        
-        # Registramos en el historial (cierre.json)
+        #Registramos en el historial (cierre.json)
         registroHistorial = {
-            "id": str(self.espacio.id),
+            "id": cedula,
             "placa": placa,
             "marca": marca,
             "color": color,
@@ -1095,27 +1107,26 @@ class VentanaObservarEspacio:
             "tipoPago": ""
         }
         registrarVehiculoEnHistorial(registroHistorial)
-        
-        # Guardamos la BD actualizada
+        #Guardamos la BD actualizada.
         guardarListaJSON(estadoApp["listaEstacionamiento"], estadoApp["archivoJSON"])
-        messagebox.showinfo("Éxito", "Vehículo estacionado correctamente en el espacio #" + str(self.espacio.id))
+        messagebox.showinfo("Éxito", "Vehículo estacionado correctamente en el espacio #" + str(self.espacio.ubicacion))
         self.ventana.destroy()
 
     def accionPagar(self):
         """
         Funcionalidad:
-            Calcula el monto a pagar, solicita el tipo de pago,
-            genera la factura PDF y libera el espacio.
+        Calcula el monto a pagar, solicita el tipo de pago,
+        genera la factura PDF y libera el espacio.
         """
-        # Calculamos las horas y el monto
+        #Calculamos las horas y el monto
         horas = calcularHoras(self.espacio, estadoApp["tiempoGracia"])
         monto = horas * estadoApp["montoPorHora"]
         print("MONTO POR HORA",estadoApp["montoPorHora"])
-        # Mostramos el monto e pedimos el tipo de pago
+        #Mostramos el monto e pedimos el tipo de pago
         tiposPago = ["Efectivo", "SINPE", "Tarjeta"]
         self.varTipoPago = tk.StringVar()
         self.varTipoPago.set(tiposPago[0])
-        # Ventana emergente para seleccionar tipo de pago
+        #Ventana emergente para seleccionar tipo de pago
         ventanaPago = tk.Toplevel(self.ventana)
         ventanaPago.title("Tipo de pago")
         ventanaPago.geometry("320x250")
@@ -1134,24 +1145,22 @@ class VentanaObservarEspacio:
     def confirmarPago(self):
         """
         Funcionalidad:
-            Registra el pago, genera la factura PDF, libera el
-            espacio y actualiza la BD.
+        Registra el pago, genera la factura PDF, libera el
+        espacio y actualiza la BD.
         """
         horas = calcularHoras(self.espacio, estadoApp["tiempoGracia"])
         monto = horas * estadoApp["montoPorHora"]
         tipoPago  = self.varTipoPago.get()
         horaSalida = obtenerFechaHora()
-        # Actualizamos el objeto con los datos del pago
+        #Actualizamos el objeto con los datos del pago
         self.espacio.fechaHoraSalida = horaSalida
-        self.espacio.monto           = round(monto, 2)
-        self.espacio.tipoPago        = tipoPago
-        # Generamos la factura PDF
+        self.espacio.monto = round(monto, 2)
+        self.espacio.tipoPago = tipoPago
+        #Generamos la factura PDF
         generarFacturaPDF(self.espacio)
-        
-        # Actualizamos el historial (cierre.json)
+        #Actualizamos el historial (cierre.json)
         actualizarSalidaEnHistorial(self.espacio.placa, self.espacio.fechaHoraEntrada, horaSalida, round(monto, 2), tipoPago)
-        
-        # Liberamos el espacio borrando los datos del vehículo
+        #Liberamos el espacio borrando los datos del vehículo
         self.espacio.placa = ""
         self.espacio.marca = ""
         self.espacio.color = ""
@@ -1208,60 +1217,81 @@ class VentanaVerEstacionamiento:
         """
         frameMapa = tk.Frame(self.ventana, bg="#e8d7a9")
         frameMapa.pack(fill="both", expand=True, pady=10, padx=10)
-
-        # Crear un Canvas y un Scrollbar dentro de frameMapa
+        #Crear un Canvas y un Scrollbar dentro de frameMapa
         canvas = tk.Canvas(frameMapa, bg="#e8d7a9", highlightthickness=0)
         scrollbar = tk.Scrollbar(frameMapa, orient="vertical", command=canvas.yview)
-        
-        # Contenedor de la cuadrícula
+        #Contenedor de la cuadrícula
         frameCuadricula = tk.Frame(canvas, bg="#e8d7a9")
-
-        # Configurar el Canvas para que use el Scrollbar
+        #Configurar el Canvas para que use el Scrollbar
         canvas.configure(yscrollcommand=scrollbar.set)
-
-        # Ubicar el Canvas y el Scrollbar
+        #Ubicar el Canvas y el Scrollbar
         scrollbar.pack(side="right", fill="y")
         canvas.pack(side="left", fill="both", expand=True)
-
-        # Crear una ventana de Canvas para frameCuadricula
-        canvas_frame_id = canvas.create_window((250, 0), window=frameCuadricula, anchor="n")
-
-        # Asegurar que el tamaño de la región de desplazamiento se actualice al cambiar la cuadrícula
-        def al_configurar_frame(event):
+        #Crear una ventana de Canvas para frameCuadricula
+        canvasFrameId = canvas.create_window((250, 0), window=frameCuadricula, anchor="n")
+        #Asegurar que el tamaño de la región de desplazamiento se actualice al cambiar la cuadrícula
+        def configurarFrame(event):
+            """
+            Funcionalidad:
+            Ajusta la región de desplazamiento del Canvas según el tamaño del frameCuadricula.
+            Entrada:
+            event: evento de cambio de tamaño del frameCuadricula.
+            Salida:
+            Actualiza la región de desplazamiento del Canvas para que coincida con el tamaño del frameCuadricula.
+            """
             canvas.configure(scrollregion=canvas.bbox("all"))
-            
-        frameCuadricula.bind("<Configure>", al_configurar_frame)
+        frameCuadricula.bind("<Configure>", configurarFrame)
 
-        # Centrar el contenido horizontalmente cuando cambie el tamaño del canvas
-        def al_configurar_canvas(event):
-            canvas_width = event.width
-            canvas.coords(canvas_frame_id, canvas_width // 2, 0)
-            
-        canvas.bind("<Configure>", al_configurar_canvas)
+        #Centrar el contenido horizontalmente cuando cambie el tamaño del canvas
+        def configurarCanvas(event):
+            """
+            Funcionalidad:
+            Ajusta la posición del frameCuadricula dentro del Canvas para centrarlo horizontalmente
+            Entrada:
+            event: evento de cambio de tamaño del canvas.
+            Salida:
+            Actualiza la posición del frameCuadricula para que esté centrado horizontalmente en el Canvas.
+            """
+            anchoCanvas = event.width
+            canvas.coords(canvasFrameId, anchoCanvas // 2, 0)#cords define la posición del frameCuadricula dentro del canvas.
+        canvas.bind("<Configure>", configurarCanvas)
 
-        # Soporte de la rueda del mouse
-        def al_usar_rueda_mouse(event):
+        #Soporte de la rueda del mouse
+        def usarRuedaMouse(event):
+            """
+            Funcionalidad:
+            Permite desplazar el contenido del Canvas verticalmente usando la rueda del mouse.
+            Entrada:
+            event: evento de movimiento de la rueda del mouse.
+            Salida:
+            Desplaza el contenido del Canvas hacia arriba o hacia abajo según la dirección de la rueda del mouse.
+            """
             canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-
-        canvas.bind_all("<MouseWheel>", al_usar_rueda_mouse)
+        canvas.bind_all("<MouseWheel>", usarRuedaMouse)
         
-        # Desvincular rueda del mouse al cerrar la ventana
-        def al_destruir_ventana(event):
+        #Desvincular rueda del mouse al cerrar la ventana
+        def adestruirVentana(event):
+            """
+            Funcionalidad:
+            Desvincula el evento de la rueda del mouse al cerrar la ventana para evitar errores
+            Entrada:
+            event: evento de destrucción de la ventana.
+            Salida:
+            Desvincula el evento de la rueda del mouse del Canvas para evitar errores al cerrar la ventana.
+            """
             if event.widget == self.ventana:
                 try:
                     self.ventana.unbind_all("<MouseWheel>")
                 except:
                     pass
-        self.ventana.bind("<Destroy>", al_destruir_ventana)
-
-        # Leemos la lista de objetos del estado global
+        self.ventana.bind("<Destroy>", adestruirVentana)
+        #Leemos la lista de objetos del estado global
         lista = estadoApp["listaEstacionamiento"]
-        # Si la lista está vacía, avisamos y salimos
+        #Si la lista está vacía, avisamos y salimos
         if len(lista) == 0:
             messagebox.showerror("Error", "No hay estacionamiento configurado. Configure el parqueo primero.")
             self.ventana.destroy()
             return
-        
         fila = 0
         columna = 0
         for espacio in lista:
@@ -1275,9 +1305,8 @@ class VentanaVerEstacionamiento:
             columna += 1
             if columna == 4:
                 columna = 0
-                fila = fila + 1
-                
-        # Casetilla y baño al final del mapa
+                fila = fila + 1   
+        #Casetilla y baño al final del mapa
         labelCasetilla = tk.Label(frameCuadricula, text="Casetilla de cobro", font=("Segoe UI", 10, "bold"), bg="#8eaa94", fg="#EAEAEA", width=20, height=2)
         labelCasetilla.grid(row=fila + 1, column=0, columnspan=2, padx=8, pady=(20, 8))
         labelBano = tk.Label(frameCuadricula, text="Baño", font=("Segoe UI", 10, "bold"), bg="#8eaa94", fg="#EAEAEA", width=20, height=2)
@@ -1286,6 +1315,8 @@ class VentanaVerEstacionamiento:
     def construirPie(self):
         """
         Crea la barra inferior con el botón para regresar al menú principal.
+        Salida:
+        Botón de regresar agregado a la interfaz gráfica.
         """
         framePie = tk.Frame(self.ventana, bg="#e8d7a9", pady=10)
         framePie.pack(fill="x", side="bottom")
@@ -1298,15 +1329,14 @@ def generarCierreDiario():
     """
     Genera el reporte de cierre diario en formato PDF con la información de todos
     los vehículos del día, actualizando los datos de salida si es necesario.
+    Salida:
+    Archivo PDF guardado en la ubicación seleccionada por el usuario.
     """
-    from tkinter import filedialog
-    from datetime import datetime
-
+    
     vehiculos = cargarHistorialJSON()
     if not vehiculos:
         messagebox.showwarning("Advertencia", "No hay vehículos registrados en el historial (cierre.json).")
         return
-
     nombreArchivo = filedialog.asksaveasfilename(
         title="Guardar Cierre Diario PDF",
         defaultextension=".pdf",
@@ -1314,21 +1344,18 @@ def generarCierreDiario():
     )
     if not nombreArchivo:
         return
-
     try:
-        ahora_str = obtenerFechaHora()
-        hubo_cambios = False
-
-        # Actualiza la fecha/hora de salida y monto de los vehículos que no la tienen, y genera facturas
+        ahoraStr = obtenerFechaHora() #ahoraStr es la fecha y hora actual en formato "dd/mm/yyyy hh:mm:ss"
+        huboCambios = False
+        #Actualiza la fecha/hora de salida y monto de los vehículos que no la tienen, y genera facturas
         for vehiculo in vehiculos:
             if vehiculo.get("fechaHoraSalida", "") == "":
                 print("VEHICULO SIN SALIDA REGISTRADA: ", vehiculo)
-                vehiculo["fechaHoraSalida"] = ahora_str
-                # Si el tipo de pago está vacío, asigna por defecto "Efectivo"
+                vehiculo["fechaHoraSalida"] = ahoraStr
+                #Si el tipo de pago está vacío, asigna por defecto "Efectivo"
                 if vehiculo.get("tipoPago", "") == "":
                     vehiculo["tipoPago"] = "Efectivo"
-                
-                # Crear un objeto temporal para calcular horas
+                #Crear un objeto temporal para calcular horas
                 dummyEspacio = Estacionamiento(
                     pId=vehiculo.get("id", ""),
                     pPlaca=vehiculo.get("placa", ""),
@@ -1343,15 +1370,12 @@ def generarCierreDiario():
                 )
                 horas = calcularHoras(dummyEspacio, estadoApp["tiempoGracia"])
                 vehiculo["monto"] = round(horas * estadoApp["montoPorHora"], 2)
-                
-                # Actualizar el objeto temporal con la salida y monto final para la factura
+                #Actualizar el objeto temporal con la salida y monto final para la factura
                 dummyEspacio.fechaHoraSalida = vehiculo["fechaHoraSalida"]
                 dummyEspacio.monto = vehiculo["monto"]
-                
-                # Generamos la factura PDF
+                #Generamos la factura PDF
                 generarFacturaPDF(dummyEspacio)
-                
-                # Liberamos el espacio correspondiente en el estacionamiento activo (parqueo.json)
+                #Liberamos el espacio correspondiente en el estacionamiento activo (parqueo.json)
                 espacioActivo = buscarEspacio(estadoApp["listaEstacionamiento"], vehiculo.get("ubicacion", ""))
                 if espacioActivo is not None:
                     espacioActivo.placa = ""
@@ -1361,125 +1385,94 @@ def generarCierreDiario():
                     espacioActivo.fechaHoraSalida = ""
                     espacioActivo.monto = 0
                     espacioActivo.tipoPago = ""
-                
-                hubo_cambios = True
-
-        if hubo_cambios:
+                huboCambios = True
+        if huboCambios:
             guardarHistorialJSON(vehiculos)
             guardarListaJSON(estadoApp["listaEstacionamiento"], estadoApp["archivoJSON"])
-
-        # Totales agrupados
+        #Totales agrupados
         totales = {
             "Efectivo": 0.0,
             "SINPE": 0.0,
             "Tarjeta": 0.0
         }
-        total_general = 0.0
-
+        totalGeneral = 0.0
         for vehiculo in vehiculos:
             monto = float(vehiculo.get("monto", 0.0))
-            tipo_pago_raw = vehiculo.get("tipoPago", "Efectivo")
-            tipo_pago_norm = tipo_pago_raw.strip().upper()
-            if "SINPE" in tipo_pago_norm:
-                tipo_key = "SINPE"
-            elif "TARJETA" in tipo_pago_norm:
-                tipo_key = "Tarjeta"
+            tipoPagoCrudo = vehiculo.get("tipoPago", "Efectivo") #tipoPagoCrudo es el valor original del tipo de pago, puede tener espacios o mayúsculas/minúsculas
+            tipoPagoNorm = tipoPagoCrudo.strip().upper() #tipoPagoNorm es el valor normalizado del tipo de pago, sin espacios y en mayúsculas
+            if "SINPE" in tipoPagoNorm:
+                tipoLlave = "SINPE"
+            elif "TARJETA" in tipoPagoNorm:
+                tipoLlave = "Tarjeta"
             else:
-                tipo_key = "Efectivo"
-            totales[tipo_key] += monto
-            total_general += monto
-
-        # Creación del PDF
+                tipoLlave = "Efectivo"
+            totales[tipoLlave] += monto
+            totalGeneral += monto
         pdf = FPDF()
         pdf.add_page()
-        
-        # Color 1: Primary - Deep Purple (82, 34, 60)
-        # Color 2: Secondary - Warm Beige (232, 215, 169)
-        # Color 3: Text/Body Color - Dark Navy/Charcoal (22, 33, 62)
-        
-        # TÍTULO (Font Size 18, Color 1)
         pdf.set_font("Arial", style="B", size=18)
         pdf.set_text_color(82, 34, 60)
         pdf.cell(190, 15, "Cierre Diario", ln=True, align="C")
-        
-        # SUBTÍTULO (Font Size 11, Color 3)
-        fecha_actual = datetime.now().strftime("%d/%m/%Y")
+        fechaActual = datetime.now().strftime("%d/%m/%Y")
         pdf.set_font("Arial", style="I", size=11)
         pdf.set_text_color(22, 33, 62)
-        pdf.cell(190, 10, "Fecha del reporte: " + fecha_actual, ln=True, align="C")
+        pdf.cell(190, 10, "Fecha del reporte: " + fechaActual, ln=True, align="C")
         pdf.ln(5)
-
-        # TABLA HEADER (Font Size 11, Color 1 Bg, White Text)
         pdf.set_font("Arial", style="B", size=11)
         pdf.set_fill_color(82, 34, 60)
         pdf.set_text_color(255, 255, 255)
-        
         pdf.cell(20, 8, "Ubic.", border=1, fill=True, align="C")
         pdf.cell(25, 8, "Placa", border=1, fill=True, align="C")
         pdf.cell(45, 8, "Hora Entrada", border=1, fill=True, align="C")
         pdf.cell(45, 8, "Hora Salida", border=1, fill=True, align="C")
         pdf.cell(30, 8, "Tipo Pago", border=1, fill=True, align="C")
         pdf.cell(25, 8, "Monto", border=1, fill=True, align="C", ln=True)
-
-        # TABLA BODY (Font Size 9, Color 3 Text, Alternating Color 2 Bg)
         pdf.set_font("Arial", size=9)
         pdf.set_text_color(22, 33, 62)
-        
         fill = False
         for vehiculo in vehiculos:
             # Alternar color de fondo
             if fill:
-                pdf.set_fill_color(232, 215, 169) # Warm Beige
+                pdf.set_fill_color(232, 215, 169) 
             else:
-                pdf.set_fill_color(255, 255, 255) # White
-                
+                pdf.set_fill_color(255, 255, 255) 
             pdf.cell(20, 8, str(vehiculo.get("ubicacion", "")), border=1, fill=True, align="C")
             pdf.cell(25, 8, str(vehiculo.get("placa", "")), border=1, fill=True, align="C")
             pdf.cell(45, 8, str(vehiculo.get("fechaHoraEntrada", "")), border=1, fill=True, align="C")
             pdf.cell(45, 8, str(vehiculo.get("fechaHoraSalida", "")), border=1, fill=True, align="C")
             pdf.cell(30, 8, str(vehiculo.get("tipoPago", "")), border=1, fill=True, align="C")
             pdf.cell(25, 8, "colones " + str(vehiculo.get("monto", 0)), border=1, fill=True, align="R", ln=True)
-            fill = not fill
-
+            fill = not fill # = not fill alterna el color de fondo para la siguiente fila
         pdf.ln(10)
-
-        # SECCIÓN DE RESUMEN (Font Size 11 B, Color 1)
         pdf.set_font("Arial", style="B", size=11)
         pdf.set_text_color(82, 34, 60)
         pdf.cell(190, 8, "Resumen por Tipo de Pago", ln=True)
         pdf.ln(2)
-
-        # RESUMEN DETALLE (Font Size 9, Color 3 Text)
         pdf.set_font("Arial", size=9)
         pdf.set_text_color(22, 33, 62)
-        
-        # Efectivo
+        #Efectivo
         pdf.cell(50, 6, "Efectivo:", border=0)
         pdf.cell(140, 6, "colones " + str(round(totales["Efectivo"], 2)), border=0, ln=True)
-        # SINPE
+        #SINPE
         pdf.cell(50, 6, "SINPE:", border=0)
         pdf.cell(140, 6, "colones " + str(round(totales["SINPE"], 2)), border=0, ln=True)
-        # Tarjeta
+        #Tarjeta
         pdf.cell(50, 6, "Tarjeta:", border=0)
         pdf.cell(140, 6, "colones " + str(round(totales["Tarjeta"], 2)), border=0, ln=True)
-        
-        # Divider Line
+        #Divider Line
         pdf.ln(2)
         pdf.set_draw_color(82, 34, 60)
         pdf.line(10, pdf.get_y(), 200, pdf.get_y())
         pdf.ln(2)
-        
-        # Total General
+        #Total General
         pdf.set_font("Arial", style="B", size=11)
         pdf.set_text_color(82, 34, 60)
         pdf.cell(50, 8, "Total General:", border=0)
-        pdf.cell(140, 8, "colones " + str(round(total_general, 2)), border=0, ln=True)
-
-        # Guardar archivo PDF
+        pdf.cell(140, 8, "colones " + str(round(totalGeneral, 2)), border=0, ln=True)
+        #Guardar archivo PDF
         pdf.output(nombreArchivo)
         messagebox.showinfo("Éxito", f"Reporte de Cierre Diario generado correctamente en:\n{nombreArchivo}")
-
-    except Exception as e:
+    except Exception as e: #"e" captura cualquier excepción que ocurra durante la generación del PDF.
         messagebox.showerror("Error", f"Ocurrió un error al generar el archivo PDF:\n{str(e)}")
 
 def generarCierreTipo():
@@ -1487,9 +1480,6 @@ def generarCierreTipo():
     Genera el archivo XML con el cierre separado por tipo de pago
     (efectivo, sinpe, tarjeta) obteniendo la información desde cierre.json.
     """
-    from tkinter import filedialog
-    import xml.etree.ElementTree as ET
-    from xml.dom import minidom
 
     vehiculos = cargarHistorialJSON()
     if not vehiculos:
@@ -1503,21 +1493,18 @@ def generarCierreTipo():
     )
     if not nombreArchivo:
         return
-
     try:
-        ahora_str = obtenerFechaHora()
-        hubo_cambios = False
-
-        # Actualiza la fecha/hora de salida y monto de los vehículos que no la tienen
+        ahoraStr = obtenerFechaHora() #ahoraStr es la fecha y hora actual en formato "dd/mm/yyyy hh:mm:ss"
+        huboCambios = False
+        #Actualiza la fecha/hora de salida y monto de los vehículos que no la tienen
         for vehiculo in vehiculos:
             if vehiculo.get("fechaHoraSalida", "") == "":
                 print("VEHICULO SIN SALIDA REGISTRADA: ", vehiculo)
-                vehiculo["fechaHoraSalida"] = ahora_str
-                # Si el tipo de pago está vacío, asigna por defecto "Efectivo"
+                vehiculo["fechaHoraSalida"] = ahoraStr
+                #Si el tipo de pago está vacío, asigna por defecto "Efectivo"
                 if vehiculo.get("tipoPago", "") == "":
                     vehiculo["tipoPago"] = "Efectivo"
-                
-                # Crear un objeto temporal para calcular horas
+                #Crear un objeto temporal para calcular horas
                 dummyEspacio = Estacionamiento(
                     pId=vehiculo.get("id", ""),
                     pPlaca=vehiculo.get("placa", ""),
@@ -1532,15 +1519,12 @@ def generarCierreTipo():
                 )
                 horas = calcularHoras(dummyEspacio, estadoApp["tiempoGracia"])
                 vehiculo["monto"] = round(horas * estadoApp["montoPorHora"], 2)
-                
-                # Actualizar el objeto temporal con la salida y monto final para la factura
+                #Actualizar el objeto temporal con la salida y monto final para la factura
                 dummyEspacio.fechaHoraSalida = vehiculo["fechaHoraSalida"]
                 dummyEspacio.monto = vehiculo["monto"]
-                
-                # Generamos la factura PDF
+                #Generamos la factura PDF
                 generarFacturaPDF(dummyEspacio)
-                
-                # Liberamos el espacio correspondiente en el estacionamiento activo (parqueo.json)
+                #Liberamos el espacio correspondiente en el estacionamiento activo (parqueo.json)
                 espacioActivo = buscarEspacio(estadoApp["listaEstacionamiento"], vehiculo.get("ubicacion", ""))
                 if espacioActivo is not None:
                     espacioActivo.placa = ""
@@ -1550,73 +1534,66 @@ def generarCierreTipo():
                     espacioActivo.fechaHoraSalida = ""
                     espacioActivo.monto = 0
                     espacioActivo.tipoPago = ""
-                
-                hubo_cambios = True
-
-        if hubo_cambios:
+                huboCambios = True
+        if huboCambios:
             guardarHistorialJSON(vehiculos)
             guardarListaJSON(estadoApp["listaEstacionamiento"], estadoApp["archivoJSON"])
-
-        # Agrupa los registros por tipo de pago normalizado
+        #Agrupa los registros por tipo de pago normalizado
         grupos = {
             "Efectivo": [],
             "SINPE": [],
             "Tarjeta": []
         }
-
         for vehiculo in vehiculos:
-            tipo_pago_raw = vehiculo.get("tipoPago", "Efectivo")
-            tipo_pago_norm = tipo_pago_raw.strip().upper()
-            if "SINPE" in tipo_pago_norm:
+            tipoPagoCrudo = vehiculo.get("tipoPago", "Efectivo") #tipoPagoCrudo es el valor original del tipo de pago, que puede tener variaciones en mayúsculas/minúsculas o espacios.
+            tipoPagoNorm = tipoPagoCrudo.strip().upper() #tipoPagoNorm es el valor normalizado del tipo de pago, que se utiliza para determinar a qué grupo pertenece el vehículo.
+            if "SINPE" in tipoPagoNorm: 
                 grupos["SINPE"].append(vehiculo)
-            elif "TARJETA" in tipo_pago_norm:
+            elif "TARJETA" in tipoPagoNorm:
                 grupos["Tarjeta"].append(vehiculo)
             else:
                 grupos["Efectivo"].append(vehiculo)
-
-        # Construcción del documento XML
+        #Construcción del documento XML
         root = ET.Element("cierre")
-        for tipo_pago, vehiculos_grupo in grupos.items():
-            categoria = ET.SubElement(root, tipo_pago)
-            for vehiculo in vehiculos_grupo:
-                vehiculo_el = ET.SubElement(categoria, "vehiculo")
-                ET.SubElement(vehiculo_el, "id").text = str(vehiculo.get("id", ""))
-                ET.SubElement(vehiculo_el, "placa").text = str(vehiculo.get("placa", ""))
-                ET.SubElement(vehiculo_el, "marca").text = str(vehiculo.get("marca", ""))
-                ET.SubElement(vehiculo_el, "color").text = str(vehiculo.get("color", ""))
-                ET.SubElement(vehiculo_el, "tipoEspacio").text = str(vehiculo.get("tipo", ""))
-                ET.SubElement(vehiculo_el, "ubicacion").text = str(vehiculo.get("ubicacion", ""))
-                ET.SubElement(vehiculo_el, "fechaHoraEntrada").text = str(vehiculo.get("fechaHoraEntrada", ""))
-                ET.SubElement(vehiculo_el, "fechaHoraSalida").text = str(vehiculo.get("fechaHoraSalida", ""))
-                ET.SubElement(vehiculo_el, "monto").text = str(vehiculo.get("monto", 0))
-                ET.SubElement(vehiculo_el, "tipoPago").text = str(vehiculo.get("tipoPago", ""))
-
-        # Formatea el XML de manera amigable (pretty print)
-        xmlstr = minidom.parseString(ET.tostring(root, encoding="utf-8")).toprettyxml(indent="    ")
-
+        for tipoPago, grupoVehiculos in grupos.items():
+            categoria = ET.SubElement(root, tipoPago)
+            for vehiculo in grupoVehiculos:
+                vehiculoElemento = ET.SubElement(categoria, "vehiculo") #vehiculoElemento es el nodo XML que representa un vehículo dentro de la categoría de pago correspondiente.
+                ET.SubElement(vehiculoElemento, "id").text = str(vehiculo.get("id", ""))
+                ET.SubElement(vehiculoElemento, "placa").text = str(vehiculo.get("placa", ""))
+                ET.SubElement(vehiculoElemento, "marca").text = str(vehiculo.get("marca", ""))
+                ET.SubElement(vehiculoElemento, "color").text = str(vehiculo.get("color", ""))
+                ET.SubElement(vehiculoElemento, "tipoEspacio").text = str(vehiculo.get("tipo", ""))
+                ET.SubElement(vehiculoElemento, "ubicacion").text = str(vehiculo.get("ubicacion", ""))
+                ET.SubElement(vehiculoElemento, "fechaHoraEntrada").text = str(vehiculo.get("fechaHoraEntrada", ""))
+                ET.SubElement(vehiculoElemento, "fechaHoraSalida").text = str(vehiculo.get("fechaHoraSalida", ""))
+                ET.SubElement(vehiculoElemento, "monto").text = str(vehiculo.get("monto", 0))
+                ET.SubElement(vehiculoElemento, "tipoPago").text = str(vehiculo.get("tipoPago", ""))
+        #Formatea el XML de manera amigable (pretty print)
+        xmlstr = minidom.parseString(ET.tostring(root, encoding="utf-8")).toprettyxml(indent="    ") #xmlstr es la cadena de texto que contiene el XML formateado de manera legible, con sangrías y saltos de línea.
         with open(nombreArchivo, "w", encoding="utf-8") as archivo:
             archivo.write(xmlstr)
-
         messagebox.showinfo("Éxito", f"Reporte XML generado correctamente en:\n{nombreArchivo}")
-
-    except Exception as e:
-        messagebox.showerror("Error", f"Ocurrió un error al generar el archivo XML:\n{str(e)}")
+    except Exception as e: #"e" captura cualquier excepción que ocurra durante la generación del XML.
+        messagebox.showerror("Ha ocurrido un problema", f"Ocurrió un error al generar el archivo XML:\n{str(e)}") 
 
 def exportarCierreCSV(nombreArchivo):
     """
     Exporta el historial de cierre (cierre.json) a un archivo CSV.
+    Entrada:
+    nombreArchivo (str): nombre del archivo CSV a generar.
+    Salida:
+    Archivo CSV guardado en la ubicación seleccionada por el usuario.
     """
     if nombreArchivo == "":
         messagebox.showerror("Advertencia", "Debe ingresar un nombre de archivo.")
         return
     if not nombreArchivo.endswith(".csv"):
         nombreArchivo += ".csv"
-        
     vehiculos = cargarHistorialJSON()
     if not vehiculos:
         messagebox.showwarning("Advertencia", "No hay vehículos registrados en el historial (cierre.json).")
         return
-        
     try:
         archivo = open(nombreArchivo, "w", encoding="utf-8")
         for vehiculo in vehiculos:
@@ -1633,7 +1610,7 @@ def exportarCierreCSV(nombreArchivo):
         archivo.close()
         messagebox.showinfo("Éxito", f"Archivo exportado correctamente en: {nombreArchivo}")
     except:
-        messagebox.showerror("Error", "No fue posible exportar el archivo.")
+        messagebox.showerror("Ha ocurrido un problema", "No fue posible exportar el archivo.")
 
 class VentanaReportes:
     """
@@ -1760,8 +1737,7 @@ class VentanaConfiguracion:
         self.entradaTamanio      = crearCampoEntrada(frameFormulario, "Tamaño del parqueo:")
         self.entradaTiempoGracia = crearCampoEntrada(frameFormulario, "Tiempo de gracia (min):")
         self.entradaMontoPorHora = crearCampoEntrada(frameFormulario, "Monto por hora (₡):")
-        
-        # Prepopulate with current configuration if exists
+        #Prepopulate with current configuration if exists
         if estadoApp["tamanio"] > 0:
             self.entradaTamanio.insert(0, str(estadoApp["tamanio"]))
         if estadoApp["tiempoGracia"] > 0:
@@ -1771,7 +1747,6 @@ class VentanaConfiguracion:
             if montoStr.endswith(".0"):
                 montoStr = montoStr[:-2]
             self.entradaMontoPorHora.insert(0, montoStr)
-            
         frameBotones = tk.Frame(frameFormulario, bg="#e8d7a9") #Frame separado para los botones.
         frameBotones.pack(pady=(25, 0))
         botonGuardar = crearBotonMenu(frameBotones, "Guardar", self.accionGuardar) #self.accionGuardar es una referencia al método.
@@ -1791,19 +1766,19 @@ class VentanaConfiguracion:
         valorTamanio = self.entradaTamanio.get()
         valorTiempoGracia = self.entradaTiempoGracia.get()
         valorMonto = self.entradaMontoPorHora.get()
-        # Validamos que ningún campo esté vacío
+        #Validamos que ningún campo esté vacío
         if valorTamanio == "" or valorTiempoGracia == "" or valorMonto == "":
             messagebox.showwarning("Advertencia", "Debe completar todos los campos.")
             return
-        # Validamos tamaño
+        #Validamos tamaño
         if not valorTamanio.isdigit() or int(valorTamanio) <= 0:
             messagebox.showwarning("Advertencia", "El tamaño debe ser un número entero positivo.")
             return
-        # Validamos tiempo de gracia
+        #Validamos tiempo de gracia
         if not valorTiempoGracia.isdigit() or int(valorTiempoGracia) < 0:
             messagebox.showwarning("Advertencia", "El tiempo de gracia debe ser cero o mayor.")
             return
-        # Validamos monto
+        #Validamos monto
         try:
             montoFloat = float(valorMonto)
             if montoFloat <= 0:
@@ -1821,11 +1796,10 @@ class VentanaConfiguracion:
         estadoApp["tamanio"] = int(valorTamanio)
         estadoApp["tiempoGracia"] = int(valorTiempoGracia)
         estadoApp["montoPorHora"] = montoFloat
-
-        # Preguntamos por espacio eléctrico
+        #Preguntamos por espacio eléctrico
         tieneElectrico = messagebox.askyesno("Espacio eléctrico", "¿El estacionamiento tiene espacio para vehículos eléctricos?")
         estadoApp["tieneElectrico"] = tieneElectrico
-        # Creamos la lista y guardamos
+        #Creamos la lista y guardamos
         estadoApp["listaEstacionamiento"] = crearListaEstacionamiento(int(valorTamanio), tieneElectrico)
         guardarListaJSON(estadoApp["listaEstacionamiento"], estadoApp["archivoJSON"])
         messagebox.showinfo("Éxito", "Configuración guardada correctamente.")
