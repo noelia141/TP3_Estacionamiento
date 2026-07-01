@@ -618,11 +618,11 @@ def generarFacturaPDF(pEspacio):
     pdf.cell(200, 9, "Datos del vehículo", ln=True)
     pdf.set_font("Arial", size=11)
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(200, 8, "Placa:          " + str(pEspacio.placa),            ln=True)
-    pdf.cell(200, 8, "Marca:          " + str(pEspacio.marca),            ln=True)
-    pdf.cell(200, 8, "Color:          " + str(pEspacio.color),            ln=True)
-    pdf.cell(200, 8, "Tipo espacio:   " + str(pEspacio.tipo),             ln=True)
-    pdf.cell(200, 8, "Cédula dueño:   " + str(pEspacio.id),        ln=True)
+    pdf.cell(200, 8, "Placa: " + str(pEspacio.placa), ln=True)
+    pdf.cell(200, 8, "Marca: " + str(pEspacio.marca), ln=True)
+    pdf.cell(200, 8, "Color: " + str(pEspacio.color), ln=True)
+    pdf.cell(200, 8, "Tipo espacio: " + str(pEspacio.tipo), ln=True)
+    pdf.cell(200, 8, "Cédula dueño: " + str(pEspacio.id), ln=True)
     pdf.ln(4)
     #Datos de la estadía
     pdf.set_font("Arial", style="B", size=13)
@@ -632,7 +632,7 @@ def generarFacturaPDF(pEspacio):
     pdf.set_text_color(0, 0, 0)
     pdf.cell(200, 8, "Espacio #: " + str(pEspacio.ubicacion), ln=True)
     pdf.cell(200, 8, "Hora de entrada: " + str(pEspacio.fechaHoraEntrada), ln=True)
-    pdf.cell(200, 8, "Hora de salida:  " + str(pEspacio.fechaHoraSalida),  ln=True)
+    pdf.cell(200, 8, "Hora de salida:  " + str(pEspacio.fechaHoraSalida), ln=True)
     pdf.ln(4)
     #Datos del pago
     pdf.set_font("Arial", style="B", size=13)
@@ -640,7 +640,7 @@ def generarFacturaPDF(pEspacio):
     pdf.cell(200, 9, "Datos del pago", ln=True)
     pdf.set_font("Arial", size=11)
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(200, 8, "Tipo de pago:   " + str(pEspacio.tipoPago),         ln=True)
+    pdf.cell(200, 8, "Tipo de pago:   " + str(pEspacio.tipoPago), ln=True)
     pdf.cell(200, 8, "Monto pagado:   " + "colones " + str(pEspacio.monto), ln=True)
     pdf.ln(6)
     #Código QR
@@ -652,7 +652,6 @@ def generarFacturaPDF(pEspacio):
     pdf.output(rutaPDF)
     os.remove(nombreQR)
     print("Factura generada: " + nombrePDF)
-
 
 #Creación de la interfaz.
 """
@@ -1221,111 +1220,102 @@ class VentanaVerEstacionamiento:
         frameMapa = tk.Frame(self.ventana, bg="#e8d7a9")
         frameMapa.pack(fill="both", expand=True, pady=10, padx=10)
         #Crear un Canvas y un Scrollbar dentro de frameMapa
-        canvas = tk.Canvas(frameMapa, bg="#e8d7a9", highlightthickness=0)
-        scrollbar = tk.Scrollbar(frameMapa, orient="vertical", command=canvas.yview)
+        self.canvas = tk.Canvas(frameMapa, bg="#e8d7a9", highlightthickness=0)
+        scrollbar = tk.Scrollbar(frameMapa, orient="vertical", command=self.canvas.yview)
         #Contenedor de la cuadrícula
-        frameCuadricula = tk.Frame(canvas, bg="#e8d7a9")
+        self.frameCuadricula = tk.Frame(self.canvas, bg="#e8d7a9")
         #Configurar el Canvas para que use el Scrollbar
-        canvas.configure(yscrollcommand=scrollbar.set)
+        self.canvas.configure(yscrollcommand=scrollbar.set)
         #Ubicar el Canvas y el Scrollbar
         scrollbar.pack(side="right", fill="y")
-        canvas.pack(side="left", fill="both", expand=True)
+        self.canvas.pack(side="left", fill="both", expand=True)
         #Crear una ventana de Canvas para frameCuadricula
-        canvasFrameId = canvas.create_window((250, 0), window=frameCuadricula, anchor="n")
-        #Asegurar que el tamaño de la región de desplazamiento se actualice al cambiar la cuadrícula
-        def configurarFrame(event):
-            """
-            Funcionalidad:
-            Ajusta la región de desplazamiento del Canvas según el tamaño del frameCuadricula.
-            Entrada:
-            event: evento de cambio de tamaño del frameCuadricula.
-            Salida:
-            Actualiza la región de desplazamiento del Canvas para que coincida con el tamaño del frameCuadricula.
-            """
-            canvas.configure(scrollregion=canvas.bbox("all"))
-        frameCuadricula.bind("<Configure>", configurarFrame)
-
-        #Centrar el contenido horizontalmente cuando cambie el tamaño del canvas
-        def configurarCanvas(event):
-            """
-            Funcionalidad:
-            Ajusta la posición del frameCuadricula dentro del Canvas para centrarlo horizontalmente
-            Entrada:
-            event: evento de cambio de tamaño del canvas.
-            Salida:
-            Actualiza la posición del frameCuadricula para que esté centrado horizontalmente en el Canvas.
-            """
-            anchoCanvas = event.width
-            canvas.coords(canvasFrameId, anchoCanvas // 2, 0)#cords define la posición del frameCuadricula dentro del canvas.
-        canvas.bind("<Configure>", configurarCanvas)
-
-        #Soporte de la rueda del mouse
-        def usarRuedaMouse(event):
-            """
-            Funcionalidad:
-            Permite desplazar el contenido del Canvas verticalmente usando la rueda del mouse.
-            Entrada:
-            event: evento de movimiento de la rueda del mouse.
-            Salida:
-            Desplaza el contenido del Canvas hacia arriba o hacia abajo según la dirección de la rueda del mouse.
-            """
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-        canvas.bind_all("<MouseWheel>", usarRuedaMouse)
-        
-        #Desvincular rueda del mouse al cerrar la ventana
-        def adestruirVentana(event):
-            """
-            Funcionalidad:
-            Desvincula el evento de la rueda del mouse al cerrar la ventana para evitar errores
-            Entrada:
-            event: evento de destrucción de la ventana.
-            Salida:
-            Desvincula el evento de la rueda del mouse del Canvas para evitar errores al cerrar la ventana.
-            """
-            if event.widget == self.ventana:
-                try:
-                    self.ventana.unbind_all("<MouseWheel>")
-                except:
-                    pass
-        self.ventana.bind("<Destroy>", adestruirVentana)
+        self.canvasFrameId = self.canvas.create_window((250, 0),window=self.frameCuadricula, anchor="n")
+        #Asociar los eventos con métodos de la clase
+        self.frameCuadricula.bind("<Configure>", self.configurarFrame)
+        self.canvas.bind("<Configure>", self.configurarCanvas)
+        self.canvas.bind_all("<MouseWheel>", self.usarRuedaMouse)
+        self.ventana.bind("<Destroy>", self.destruirVentana)
         #Leemos la lista de objetos del estado global
         lista = estadoApp["listaEstacionamiento"]
         #Si la lista está vacía, avisamos y salimos
         if len(lista) == 0:
-            messagebox.showerror("Error", "No hay estacionamiento configurado. Configure el parqueo primero.")
+            messagebox.showwarning("Advertencia", "No hay estacionamiento configurado. Configure el parqueo primero.")
             self.ventana.destroy()
             return
         fila = 0
         columna = 0
         for espacio in lista:
-            # Determinamos si está ocupado usando la función auxiliar
             if espacioEstaOcupado(espacio):
                 estado = "ocupado"
             else:
                 estado = "libre"
-            botonEspacio = EspacioParqueo(frameCuadricula, espacio.ubicacion, estado, self.root)
+            botonEspacio = EspacioParqueo(self.frameCuadricula, espacio.ubicacion, estado, self.root)
             botonEspacio.boton.grid(row=fila, column=columna, padx=8, pady=8)
             columna += 1
             if columna == 4:
                 columna = 0
-                fila = fila + 1   
-        #Casetilla y baño al final del mapa
-        labelCasetilla = tk.Label(frameCuadricula, text="Casetilla de cobro", font=("Segoe UI", 10, "bold"), bg="#8eaa94", fg="#EAEAEA", width=20, height=2)
+                fila += 1
+        # Casetilla y baño al final del mapa
+        labelCasetilla = tk.Label(self.frameCuadricula,text="Casetilla de cobro",font=("Segoe UI", 10, "bold"),bg="#8eaa94",fg="#EAEAEA",width=20,height=2)
         labelCasetilla.grid(row=fila + 1, column=0, columnspan=2, padx=8, pady=(20, 8))
-        labelBano = tk.Label(frameCuadricula, text="Baño", font=("Segoe UI", 10, "bold"), bg="#8eaa94", fg="#EAEAEA", width=20, height=2)
+        labelBano = tk.Label(self.frameCuadricula, text="Baño", font=("Segoe UI", 10, "bold"), bg="#8eaa94",fg="#EAEAEA", width=20,height=2)
         labelBano.grid(row=fila + 1, column=2, columnspan=2, padx=8, pady=(20, 8))
-    
-    def construirPie(self):
+
+    def configurarFrame(self, event):
         """
-        Crea la barra inferior con el botón para regresar al menú principal.
+        Funcionalidad:
+        Ajusta la región de desplazamiento del Canvas según el tamaño del
+        frameCuadricula.
+        Entrada:
+        event: evento de cambio de tamaño del frameCuadricula.
         Salida:
-        Botón de regresar agregado a la interfaz gráfica.
+        Actualiza la región de desplazamiento del Canvas para que coincida
+        con el tamaño del frameCuadricula.
         """
-        framePie = tk.Frame(self.ventana, bg="#e8d7a9", pady=10)
-        framePie.pack(fill="x", side="bottom")
-        #self.ventana.destroy cierra esta ventana y regresa al menú principal
-        botonRegresar = crearBotonMenu(framePie, "Regresar", self.ventana.destroy)
-        botonRegresar.pack()
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def configurarCanvas(self, event):
+        """
+        Funcionalidad:
+        Ajusta la posición del frameCuadricula dentro del Canvas para
+        centrarlo horizontalmente.
+        Entrada:
+        event: evento de cambio de tamaño del Canvas.
+        Salida:
+        Actualiza la posición del frameCuadricula para que esté centrado
+        horizontalmente.
+        """
+        anchoCanvas = event.width
+        self.canvas.coords(self.canvasFrameId, anchoCanvas // 2, 0)
+
+    def usarRuedaMouse(self, event):
+        """
+        Funcionalidad:
+        Permite desplazar el contenido del Canvas verticalmente usando la
+        rueda del mouse.
+        Entrada:
+        event: evento de movimiento de la rueda del mouse.
+        Salida:
+        Desplaza el contenido del Canvas hacia arriba o hacia abajo.
+        """
+        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def destruirVentana(self, event):
+        """
+        Funcionalidad:
+        Desvincula el evento de la rueda del mouse al cerrar la ventana
+        para evitar errores.
+        Entrada:
+        event: evento de destrucción de la ventana.
+        Salida:
+        Desvincula el evento de la rueda del mouse.
+        """
+        if event.widget == self.ventana:
+            try:
+                self.ventana.unbind_all("<MouseWheel>")
+            except:
+                pass
 
 #Interfaz del submenu de Reportes.
 def generarCierreDiario():
@@ -1335,7 +1325,6 @@ def generarCierreDiario():
     Salida:
     Archivo PDF guardado en la ubicación seleccionada por el usuario.
     """
-    
     vehiculos = cargarHistorialJSON()
     if not vehiculos:
         messagebox.showwarning("Advertencia", "No hay vehículos registrados en el historial (cierre.json).")
