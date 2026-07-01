@@ -1,4 +1,7 @@
-
+#Fecha de inicio: 08/06/2026
+#Fecha de finalización: 30/06/2026
+#Creador por: Noelia Calderon Ureña y Axel Bustos Berrocal
+#Versión de Python 3.14.6
 import json
 import random
 import re
